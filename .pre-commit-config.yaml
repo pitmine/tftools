@@ -1,0 +1,42 @@
+-   repo: git://github.com/pre-commit/pre-commit-hooks
+    # sha: v0.4.2
+    sha: 15b678e9c67c42765c3d579e40672a332f4366d7
+    hooks:
+    # added in v0.4.2 or 9ce45609a92f648c87b42207410386fd69a5d1e5
+    -   id: detect-private-key
+        files: ^(?!git-crypt)
+    # added in v0.4.2 or c9b6161fab48f76913ec31006ea233571f927b67
+    -   id: check-merge-conflict
+        # files: ^(?!git-crypt).*(?<!\.md)$
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-added-large-files
+        # args: [--maxkb=500] # default reject files >= 500KB
+    -   id: check-case-conflict
+    -   id: check-yaml
+    # -   id: check-json
+    -   id: debug-statements
+    -   id: autopep8-wrapper
+        args: ['-i', '--ignore=E501']
+    -   id: double-quote-string-fixer
+    -   id: check-docstring-first
+    -   id: flake8
+
+-   repo: git@github.com:asottile/reorder_python_imports
+    sha: 3d86483455ab5bd06cc1069fdd5ac57be5463f10
+    hooks:
+    -   id: reorder-python-imports
+        args: ['--add-import=from __future__ import print_function',
+               '--add-import=from __future__ import unicode_literals',
+               '--add-import=from __future__ import division',
+               '--add-import=from __future__ import absolute_import']
+
+-   repo: git://github.com/FalconSocial/pre-commit-mirrors-pep257
+    sha: v0.3.2
+    hooks:
+    -   id: pep257
+
+-   repo: git://github.com/pre-commit/mirrors-pylint
+    sha: v1.3.1
+    hooks:
+    -   id: pylint
