@@ -1,0 +1,20 @@
+# Certificates and keys
+*.cert filter=git-crypt diff=git-crypt
+*.key filter=git-crypt diff=git-crypt
+*.gpg filter=git-crypt diff=git-crypt
+*.p12 filter=git-crypt diff=git-crypt
+*.pem filter=git-crypt diff=git-crypt
+
+# Environment variables for Terraform (contains auth to keep out of state files)
+*.env filter=git-crypt diff=git-crypt
+
+# State files should not be committed, but if they are, they must be encrypted
+*.tfstate        filter=git-crypt diff=git-crypt
+*.tfstate.backup filter=git-crypt diff=git-crypt
+
+# Default terraform.tfvars should not be committed either, must be encrypted
+terraform.tfvars filter=git-crypt diff=git-crypt
+
+# Plan files also should not be committed, must be encrypted if they are
+*.tfplan filter=git-crypt diff=git-crypt
+*.plan   filter=git-crypt diff=git-crypt
