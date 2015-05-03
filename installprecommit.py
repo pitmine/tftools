@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Install and activate pre-commit and its hooks into virtual environment."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import os
+
 # import sys
 #
 # if sys.version_info[0] > 2 or sys.version_info[1] < 7:

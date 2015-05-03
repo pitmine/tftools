@@ -20,23 +20,36 @@
         args: ['-i', '--ignore=E501']
     -   id: double-quote-string-fixer
     -   id: check-docstring-first
+    -   id: debug-statements
+    -   id: requirements-txt-fixer
     -   id: flake8
-
--   repo: git@github.com:asottile/reorder_python_imports
-    sha: 3d86483455ab5bd06cc1069fdd5ac57be5463f10
-    hooks:
-    -   id: reorder-python-imports
-        args: ['--add-import=from __future__ import print_function',
-               '--add-import=from __future__ import unicode_literals',
-               '--add-import=from __future__ import division',
-               '--add-import=from __future__ import absolute_import']
-
--   repo: git://github.com/FalconSocial/pre-commit-mirrors-pep257
-    sha: v0.3.2
-    hooks:
-    -   id: pep257
 
 -   repo: git://github.com/pre-commit/mirrors-pylint
     sha: v1.3.1
     hooks:
     -   id: pylint
+        args: ['--rcfile=tox.ini']
+        files: '^(?!setup.py$).*\.py$'
+
+-   repo: git://github.com/FalconSocial/pre-commit-python-sorter
+    sha: 1.0.1
+    hooks:
+    -   id: python-import-sorter
+        files: '^(?!setup.py$).*\.py$'
+        # args: ['--silent-overwrite']
+
+-   repo: git://github.com/FalconSocial/pre-commit-mirrors-pep257
+    sha: v0.3.2
+    hooks:
+    -   id: pep257
+        files: '.*(?<!__init__)\.py$'
+
+#-   repo: git@github.com:asottile/reorder_python_imports
+#    sha: 3d86483455ab5bd06cc1069fdd5ac57be5463f10
+#    hooks:
+#    -   id: reorder-python-imports
+#        files: '.*(?<!__init__)\.py$'
+#        args: ['--add-import=from __future__ import print_function',
+#               '--add-import=from __future__ import unicode_literals',
+#               '--add-import=from __future__ import division',
+#               '--add-import=from __future__ import absolute_import']
