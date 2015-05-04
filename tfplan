@@ -1,0 +1,97 @@
+#!/bin/bash
+#
+# Make a Terraform plan
+#
+# The plan filename includes the tenant (directory) and timestamp when
+# `terraform plan` was run:
+#
+#    test1/20150501123456.plan
+#
+# is a plan that was created for the 'test1' tenant on May 1 at 12:34:56
+#
+# If the -destroy option is given to plan for `terraform destroy` the plan
+# filename would look like:
+#
+#    test1/20150501123456-destroy.plan
+#
+# In addition to the .plan file, a .log file captures the output from
+# `terraform plan` and a .targets file captures any -target options
+# given at the time terraform plan was run.
+
+usage() {
+    echo "Usage: plan [-destroy] [-target=RESOURCE]... TENANT[.tfvars]" 1>&2
+    exit 1
+}
+
+ARGS=
+TARGETS=
+TENANT=
+while [ "" != "$1" ]
+do
+    case "$1" in
+        -destroy) ARGS=-destroy; shift ;;
+        -target=*) TARGETS="$TARGETS $1"; shift ;;
+        -*) usage ;;
+        *)
+            if [ "" = "$TENANT" ]; then
+                TENANT=$1
+                shift
+            else
+                usage
+            fi ;;
+    esac
+done
+if [ "" = "$TENANT" ]; then
+    usage
+fi
+
+TENANT=${TENANT%.tfvars}
+BASE=$TENANT/$(date +%Y%m%d-%H%M%S)$ARGS
+
+trap "rm -f '$BASE'.{plan,targets,log}; rmdir '$TENANT' 2>/dev/null" 0
+
+# Git staging check
+if git status --porcelain *.tf 2>/dev/null | egrep -q '^([U?]|.[DMU])'; then
+    echo 'unstaged .tf files; use `git add *.tf` or `git stash -u` first'
+    exit 1
+fi
+
+# Pre-commit pre-check
+if [ -f .git/hooks/pre-commit ]; then
+    SKIP=$(sed -n 's/^ *- *id: *//p' .pre-commit-config.yaml)
+    export SKIP=$(echo "$SKIP" | egrep -v 'private|conflict' | tr '\n' ',')
+     { pre-commit run 2>&1 || exit 1; } | grep -v Skipped
+fi
+
+setenv() {
+    env -i HOME=$HOME PATH=$PATH PWD=$PWD SHELL=$SHELL TERM=$TERM USER=$USER \
+        sh -c "for E in *.env; do source \$E; done; exec $*" || exit $?
+}
+
+setenv terraform get -update
+
+mkdir -p "$TENANT" || exit 1
+for T in $TARGETS
+do
+    echo -- $T
+done > "$BASE.targets"
+
+setenv terraform plan $ARGS -module-depth=-1 -var-file "$TENANT.tfvars" \
+                      -refresh=true -state="$TENANT/terraform.tfstate"  \
+                      -out "$BASE.plan" -detailed-exitcode |
+    tee "$BASE.log"
+
+ERR=${PIPESTATUS[0]}
+
+# exit code 2 == "succeeded with non-empty diff (changes present)"
+if [ "2" = "$ERR" ]; then
+    for OUT in "$BASE".{plan,targets,out}
+    do
+        if [ ! -s "$OUT" ]; then
+            rm -f "$OUT"
+        fi
+    done
+    trap "rmdir '$TENANT' 2>/dev/null" 0
+fi
+
+exit $ERR

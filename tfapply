@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+# Apply a previously created Terraform plan
+#
+# The plan filename includes the tenant (directory) and timestamp when
+# `terraform plan` was run, e.g.:
+#
+#    test1/20150501123456.plan
+#
+# is a plan that was created for the 'test1' tenant on May 1 at 12:34:56
+#
+# In addition to the .plan file, a .tfout file captures the output from
+# `terraform plan` and a .targets file captures any -target options
+# given at the time terraform plan was run.
+
+usage() {
+    echo "Usage: tfapply PLAN[.plan]" 1>&2
+    exit 1
+}
+
+TARGETS=
+case $1 in
+    -*|'') usage ;;
+    *) PLAN=$1 ; BASE=${PLAN%.plan}; shift ;;
+esac
+if [ "0" -lt "$#" ]; then
+    usage
+fi
+
+source *.env
+
+TENANT=${PLAN%%/*}
+TARGETS=$(cat "$PLAN.targets" 2>/dev/null)
+PLANFILE=$BASE.plan
+
+# Git commit check
+if git status --porcelain *.tf 2>/dev/null | egrep -q '^([^ ]|.[^ ])'; then
+    echo 'uncommitted .tf files; use `git commit` or `git stash -u` first'
+    exit 1
+fi
+
+setenv() {
+    env -i HOME=$HOME PATH=$PATH PWD=$PWD SHELL=$SHELL TERM=$TERM USER=$USER \
+        sh -c "for E in *.env; do source \$E; done; exec $*"
+}
+
+setenv terraform apply -state=$TENANT/terraform.tfstate $TARGETS $PLANFILE |
+    tee -a "$BASE.log"
+
+ERR=${PIPESTATUS[0]}
+
+if [ "0" = "$ERR" ]; then
+    cat "$BASE".log >> "$TENANT"/terraform.log
+    rm -f "$BASE".{plan,targets,log}
+    trap "rmdir '$TENANT' 2>/dev/null" 0
+fi
+
+exit $ERR
