@@ -1,12 +1,13 @@
 # Certificates and keys
 *.cert filter=git-crypt diff=git-crypt
 *.key filter=git-crypt diff=git-crypt
-*.gpg filter=git-crypt diff=git-crypt
-*.p12 filter=git-crypt diff=git-crypt
+*.gpg filter=git-crypt diff=git-crypt binary
+*.p12 filter=git-crypt diff=git-crypt binary
 *.pem filter=git-crypt diff=git-crypt
 
 # Environment variables for Terraform (contains auth to keep out of state files)
-*.env filter=git-crypt diff=git-crypt
+*.env   filter=git-crypt diff=git-crypt
+*.tfenv filter=git-crypt diff=git-crypt
 
 # State files should not be committed, but if they are, they must be encrypted
 *.tfstate        filter=git-crypt diff=git-crypt

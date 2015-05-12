@@ -63,9 +63,13 @@ if [ -f .git/hooks/pre-commit ]; then
      { pre-commit run 2>&1 || exit 1; } | grep -v Skipped
 fi
 
+TENV=
+if [ -f "$TENANT.tfenv" ]; then
+    TENV=$TENANT.tfenv
+fi
 setenv() {
     env -i HOME=$HOME PATH=$PATH PWD=$PWD SHELL=$SHELL TERM=$TERM USER=$USER \
-        sh -c "for E in *.env; do source \$E; done; exec $*" || exit $?
+        sh -c "for E in *.env $TENV; do source \$E; done; exec $*" || exit $?
 }
 
 setenv terraform get -update
