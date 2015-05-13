@@ -96,6 +96,17 @@ if [ "2" = "$ERR" ]; then
             rm -f "$OUT"
         fi
     done
+    case "${BASE}" in
+	*-destroy*)
+	    rm -f "$DEPLOYMENT/latest.plan"
+	    ln -sf "${BASE#**/}.plan" "$DEPLOYMENT/destroy.plan"
+	    ;;
+	*)
+	    rm -f "$DEPLOYMENT/destroy.plan"
+	    ln -sf "${BASE#**/}.plan" "$DEPLOYMENT/latest.plan"
+	    ;;
+    esac
+
     trap "rmdir '$DEPLOYMENT' 2>/dev/null" 0
 fi
 

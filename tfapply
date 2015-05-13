@@ -21,7 +21,7 @@ usage() {
 TARGETS=
 case $1 in
     -*|'') usage ;;
-    *) PLAN=$1 ; BASE=${PLAN%.plan}; shift ;;
+    *) PLAN=$1 ; shift ;;
 esac
 if [ "0" -lt "$#" ]; then
     usage
@@ -29,9 +29,16 @@ fi
 
 source *.env
 
+if [ -L "$PLAN" ]; then
+    PLANFILE=${PLAN%/*}/`readlink "$PLAN"`
+else
+    PLANFILE=$PLAN
+fi
+BASE=${PLAN%.plan}
+
 DEPLOYMENT=${PLAN%%/*}
-TARGETS=$(cat "$PLAN.targets" 2>/dev/null)
-PLANFILE=$BASE.plan
+TARGETS=$(cat "$BASE.targets" 2>/dev/null)
+
 
 # Git commit check
 if git status --porcelain *.tf 2>/dev/null | egrep -q '^([^ ]|.[^ ])'; then
@@ -57,10 +64,10 @@ ERR=${PIPESTATUS[0]}
 cat "$BASE".log >> "$DEPLOYMENT"/terraform.log
 rm -f "$BASE".{targets,log}
 if [ "0" = "$ERR" ]; then
-    rm -f "$BASE".plan
     trap "rmdir '$DEPLOYMENT' 2>/dev/null" 0
 else
-    mv "$BASE".plan "$BASE".failed
+    mv "$PLANFILE" "$BASE".failed
 fi
+rm -f "$PLAN" "$PLANFILE"
 
 exit $ERR
