@@ -14,14 +14,16 @@
 # given at the time terraform plan was run.
 
 usage() {
-    echo "Usage: tfapply PLAN[.plan]" 1>&2
+    test -n "$1" && echo "$0: $*" >&2
+    echo "Usage: tfapply PLAN[.plan]" >&2
     exit 1
 }
 
 TARGETS=
 case $1 in
     -*|'') usage ;;
-    *) PLAN=$1 ; shift ;;
+    *.[^p]*|*.*[^lan]) usage plan "'$1'" is not a .plan file;;
+    *) PLAN=$1; PLAN=${PLAN%.plan}.plan; shift ;;
 esac
 if [ "0" -lt "$#" ]; then
     usage
@@ -31,8 +33,10 @@ source *.env
 
 if [ -L "$PLAN" ]; then
     PLANFILE=${PLAN%/*}/`readlink "$PLAN"`
-else
+elif [ -f "$PLAN" ]; then
     PLANFILE=$PLAN
+else
+    usage there is no "$PLAN" file
 fi
 BASE=${PLAN%.plan}
 

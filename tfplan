@@ -19,7 +19,8 @@
 # given at the time terraform plan was run.
 
 usage() {
-    echo "Usage: plan [-destroy] [-target=RESOURCE]... DEPLOYMENT[.tfvars]" 1>&2
+    test -n "$1" && echo "$0: $*" >&2
+    echo "Usage: plan [-destroy] [-target=RESOURCE]... DEPLOYMENT[.tfvars]" >&2
     exit 1
 }
 
@@ -31,7 +32,8 @@ do
     case "$1" in
         -destroy) ARGS=-destroy; shift ;;
         -target=*) TARGETS="$TARGETS $1"; shift ;;
-        -*) usage ;;
+        -*) usage bad option "'$1'";;
+	*.[^t]*|*.*[^fvars]) usage deployment "'$1'" is not a .tfvars file;;
         *)
             if [ "" = "$DEPLOYMENT" ]; then
                 DEPLOYMENT=$1
@@ -47,6 +49,10 @@ fi
 
 DEPLOYMENT=${DEPLOYMENT%.tfvars}
 BASE=$DEPLOYMENT/$(date +%Y%m%d-%H%M%S)$ARGS
+
+if [ ! -f "$DEPLOYMENT.tfvars" ]; then
+    usage there is no "$DEPLOYMENT.tfvars" file
+fi
 
 trap "rm -f '$BASE'.{plan,targets,log}; rmdir '$DEPLOYMENT' 2>/dev/null" 0
 
