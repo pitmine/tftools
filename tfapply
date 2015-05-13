@@ -23,7 +23,7 @@ TARGETS=
 case $1 in
     -*|'') usage ;;
     *.[^p]*|*.*[^lan]) usage plan "'$1'" is not a .plan file;;
-    *) PLAN=$1; PLAN=${PLAN%.plan}.plan; shift ;;
+    *) PLAN=$1; shift ;;
 esac
 if [ "0" -lt "$#" ]; then
     usage
@@ -31,6 +31,12 @@ fi
 
 source *.env
 
+case $PLAN in
+    *.plan) : ;;
+    *)  if [ ! -f "$PLAN" -a ! -f "$PLAN.plan" -a -L "$PLAN/latest.plan" ]; then
+            PLAN=$PLAN/latest.plan
+        fi ;;
+esac
 if [ -L "$PLAN" ]; then
     PLANFILE=${PLAN%/*}/`readlink "$PLAN"`
 elif [ -f "$PLAN" ]; then
