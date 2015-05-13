@@ -19,13 +19,13 @@
 # given at the time terraform plan was run.
 
 usage() {
-    echo "Usage: plan [-destroy] [-target=RESOURCE]... TENANT[.tfvars]" 1>&2
+    echo "Usage: plan [-destroy] [-target=RESOURCE]... DEPLOYMENT[.tfvars]" 1>&2
     exit 1
 }
 
 ARGS=
 TARGETS=
-TENANT=
+DEPLOYMENT=
 while [ "" != "$1" ]
 do
     case "$1" in
@@ -33,22 +33,22 @@ do
         -target=*) TARGETS="$TARGETS $1"; shift ;;
         -*) usage ;;
         *)
-            if [ "" = "$TENANT" ]; then
-                TENANT=$1
+            if [ "" = "$DEPLOYMENT" ]; then
+                DEPLOYMENT=$1
                 shift
             else
                 usage
             fi ;;
     esac
 done
-if [ "" = "$TENANT" ]; then
+if [ "" = "$DEPLOYMENT" ]; then
     usage
 fi
 
-TENANT=${TENANT%.tfvars}
-BASE=$TENANT/$(date +%Y%m%d-%H%M%S)$ARGS
+DEPLOYMENT=${DEPLOYMENT%.tfvars}
+BASE=$DEPLOYMENT/$(date +%Y%m%d-%H%M%S)$ARGS
 
-trap "rm -f '$BASE'.{plan,targets,log}; rmdir '$TENANT' 2>/dev/null" 0
+trap "rm -f '$BASE'.{plan,targets,log}; rmdir '$DEPLOYMENT' 2>/dev/null" 0
 
 # Git staging check
 if git status --porcelain *.tf 2>/dev/null | egrep -q '^([U?]|.[DMU])'; then
@@ -64,8 +64,8 @@ if [ -f .git/hooks/pre-commit ]; then
 fi
 
 TENV=
-if [ -f "$TENANT.tfenv" ]; then
-    TENV=$TENANT.tfenv
+if [ -f "$DEPLOYMENT.tfenv" ]; then
+    TENV=$DEPLOYMENT.tfenv
 fi
 setenv() {
     env -i HOME=$HOME PATH=$PATH PWD=$PWD SHELL=$SHELL TERM=$TERM USER=$USER \
@@ -74,14 +74,14 @@ setenv() {
 
 setenv terraform get -update
 
-mkdir -p "$TENANT" || exit 1
+mkdir -p "$DEPLOYMENT" || exit 1
 for T in $TARGETS
 do
     echo -- $T
 done > "$BASE.targets"
 
-setenv terraform plan $ARGS -module-depth=-1 -var-file "$TENANT.tfvars" \
-                      -refresh=true -state="$TENANT/terraform.tfstate"  \
+setenv terraform plan $ARGS -module-depth=-1 -var-file "$DEPLOYMENT.tfvars" \
+                      -refresh=true -state="$DEPLOYMENT/terraform.tfstate"  \
                       -out "$BASE.plan" -detailed-exitcode |
     tee "$BASE.log"
 
@@ -95,7 +95,7 @@ if [ "2" = "$ERR" ]; then
             rm -f "$OUT"
         fi
     done
-    trap "rmdir '$TENANT' 2>/dev/null" 0
+    trap "rmdir '$DEPLOYMENT' 2>/dev/null" 0
 fi
 
 exit $ERR

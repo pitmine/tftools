@@ -12,7 +12,7 @@ It uses [Terraform][1] and [git-crypt][2].
 
 In order to use this repository, you need the following:
 
--   Terraform 0.4.2 or later (see the [installation instructions][3])
+-   Terraform 0.5 or later (see the [installation instructions][3])
 
 -   [OpenStack][4] userid with permissions for the relevant tenants (projects)
 
@@ -73,19 +73,14 @@ tips to avoid committing sensitive information to the Git repository.
 Using Terraform
 ---------------
 
-Terraform doesn't support multiple providers of the same type until version 0.5;
-this means that only a single instance of the OpenStack provider
-(for a single tenant) can be used in a Terraform operation.
-
-To work around this limitation for Terraform 0.4.2,
-and to ensure a consistent operational workflow,
+To ensure a consistent operational workflow,
 two scripts are provided in this repository:
 `tfplan` and `tfapply`.
 They should be used in the following workflow:
 
 1.  Update repository with `git pull --rebase` or `git pull`
 2.  Modify or add Terraform '.tf' files and stage changes with `git add`
-3.  Run `tfplan $TENANT.tfvars` to generate a plan for a given tenant
+3.  Run `tfplan $DEPLOYMENT.tfvars` to generate a plan for a given tenant
 4.  Review plan and repeat steps 2 and 3 until plan is correct
 5.  Commit all terraform '.tf' configuration files with `git commit`
-6.  Run `tfapply $TENANT/2015*-*.plan` to apply plan to live configuration
+6.  Run `tfapply $DEPLOYMENT/2015*-*.plan` to apply plan to live configuration

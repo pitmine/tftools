@@ -29,7 +29,7 @@ fi
 
 source *.env
 
-TENANT=${PLAN%%/*}
+DEPLOYMENT=${PLAN%%/*}
 TARGETS=$(cat "$PLAN.targets" 2>/dev/null)
 PLANFILE=$BASE.plan
 
@@ -40,24 +40,24 @@ if git status --porcelain *.tf 2>/dev/null | egrep -q '^([^ ]|.[^ ])'; then
 fi
 
 TENV=
-if [ -f "$TENANT.tfenv" ]; then
-    TENV=$TENANT.tfenv
+if [ -f "$DEPLOYMENT.tfenv" ]; then
+    TENV=$DEPLOYMENT.tfenv
 fi
 setenv() {
     env -i HOME=$HOME PATH=$PATH PWD=$PWD SHELL=$SHELL TERM=$TERM USER=$USER \
         sh -c "for E in *.env $TENV; do source \$E; done; exec $*" || exit $?
 }
 
-setenv terraform apply -state=$TENANT/terraform.tfstate $TARGETS $PLANFILE |
+setenv terraform apply -state=$DEPLOYMENT/terraform.tfstate $TARGETS $PLANFILE |
     tee -a "$BASE.log"
 
 ERR=${PIPESTATUS[0]}
 
-cat "$BASE".log >> "$TENANT"/terraform.log
+cat "$BASE".log >> "$DEPLOYMENT"/terraform.log
 rm -f "$BASE".{targets,log}
 if [ "0" = "$ERR" ]; then
     rm -f "$BASE".plan
-    trap "rmdir '$TENANT' 2>/dev/null" 0
+    trap "rmdir '$DEPLOYMENT' 2>/dev/null" 0
 else
     mv "$BASE".plan "$BASE".failed
 fi
