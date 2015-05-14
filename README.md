@@ -12,7 +12,7 @@ It uses [Terraform][1] and [git-crypt][2].
 
 In order to use this repository, you need the following:
 
--   Terraform 0.5 or later (see the [installation instructions][3])
+-   Terraform 0.5.1 or later (see the [installation instructions][3])
 
 -   [OpenStack][4] userid with permissions for the relevant tenants (projects)
 
