@@ -16,13 +16,26 @@
 usage() {
     test -n "$1" && echo "$0: $*" >&2
     echo "Usage: tfapply PLAN[.plan]" >&2
+    BRANCH=$(gitbranch)
+    echo " (if PLAN is omitted, defaults to current branch '$BRANCH')" >&2
     exit 1
+}
+
+gitbranch() {
+    git describe --all --exact-match 2>/dev/null | sed 's=.*/=='
 }
 
 TARGETS=
 case $1 in
-    -*|'') usage ;;
+    -*) usage ;;
     *.[^p]*|*.*[^lan]) usage plan "'$1'" is not a .plan file;;
+    '')
+        PLAN=$(gitbranch)
+        if [ "" = "$PLAN" -o ! -d "$PLAN" ]; then
+            usage
+        fi
+        PLAN=$PLAN/latest.plan
+        ;;
     *) PLAN=$1; shift ;;
 esac
 if [ "0" -lt "$#" ]; then

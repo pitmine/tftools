@@ -21,7 +21,13 @@
 usage() {
     test -n "$1" && echo "$0: $*" >&2
     echo "Usage: plan [-destroy] [-target=RESOURCE]... DEPLOYMENT[.tfvars]" >&2
+    BRANCH=$(gitbranch)
+    echo " (if DEPLOYMENT is omitted, defaults to current branch '$BRANCH')" >&2
     exit 1
+}
+
+gitbranch() {
+    git describe --all --exact-match 2>/dev/null | sed 's=.*/=='
 }
 
 ARGS=
@@ -44,7 +50,10 @@ do
     esac
 done
 if [ "" = "$DEPLOYMENT" ]; then
-    usage
+    DEPLOYMENT=$(gitbranch)
+    if [ "" = "$DEPLOYMENT" -o ! -f "$DEPLOYMENT".tfvars ]; then
+	usage
+    fi
 fi
 
 DEPLOYMENT=${DEPLOYMENT%.tfvars}
