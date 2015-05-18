@@ -105,7 +105,7 @@ ERR=${PIPESTATUS[0]}
 
 # exit code 2 == "succeeded with non-empty diff (changes present)"
 if [ "2" = "$ERR" ]; then
-    for OUT in "$BASE".{plan,targets,out}
+    for OUT in "$BASE".{plan,targets,log}
     do
         if [ ! -s "$OUT" ]; then
             rm -f "$OUT"
@@ -121,6 +121,18 @@ if [ "2" = "$ERR" ]; then
 	    ln -sf "${BASE#**/}.plan" "$DEPLOYMENT/latest.plan"
 	    ;;
     esac
+
+    trap "rmdir '$DEPLOYMENT' 2>/dev/null" 0
+
+elif [ "0" = "$ERR" ]; then
+    for OUT in "$BASE".{plan,targets,log}
+    do
+        if [ ! -s "$OUT" ]; then
+            rm -f "$OUT"
+        fi
+    done
+
+    rm -f "$DEPLOYMENT/latest.plan" "$DEPLOYMENT/destroy.plan"
 
     trap "rmdir '$DEPLOYMENT' 2>/dev/null" 0
 fi
