@@ -85,6 +85,7 @@ fi
 setenv() {
     env -i HOME=$HOME PATH=$PATH PWD=$PWD SHELL=$SHELL TERM=$TERM USER=$USER \
            OS_USERNAME=$OS_USERNAME OS_PASSWORD=$OS_PASSWORD                 \
+           ${TF_LOG+TF_LOG=$TF_LOG} ${TF_LOG_PATH+TF_LOG_PATH=$TF_LOG_PATH}  \
         sh -c "for E in *.env $TENV; do source \$E; done; exec $*" || exit $?
 }
 
