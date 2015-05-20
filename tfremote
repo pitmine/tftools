@@ -60,7 +60,7 @@ fi
 case $CMD in
     push|pull)
 	$ISREMOTE || usage "tfremote $CMD requires tfremote config first"
-	source atlas.env
+	eval "$(sed -e 's/^/export /' atlas.env)"
 	exec terraform remote $CMD
 	;;
     status)
@@ -79,7 +79,7 @@ case $CMD in
 	$ISREMOTE || usage "remote state already disabled"
 	LOCAL=${REMOTE#*/}
 	mkdir -p "$LOCAL"
-	source atlas.env
+	eval "$(sed -e 's/^/export /' atlas.env)"
 	# defaults to -pull=true
 	exec terraform remote config -disable \
 	     -state "${LOCAL}/terraform.tfstate"
@@ -113,7 +113,7 @@ setenv() {
     env -i HOME=$HOME PATH=$PATH PWD=$PWD SHELL=$SHELL TERM=$TERM USER=$USER \
            OS_USERNAME=$OS_USERNAME OS_PASSWORD=$OS_PASSWORD                 \
            ${TF_LOG+TF_LOG=$TF_LOG} ${TF_LOG_PATH+TF_LOG_PATH=$TF_LOG_PATH}  \
-        sh -c "source atlas.env; exec $*" || exit $?
+        sh -c "eval '$(sed sed 's/^/export /' atlas.env)'; exec $*" || exit $?
 }
 
 LOCAL=${DEPLOYMENT#*/}
