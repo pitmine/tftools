@@ -20,15 +20,22 @@
 
 usage() {
     test -n "$1" && echo "$0: $*" >&2
-    echo "Usage: plan [-destroy] [-target=RESOURCE]... DEPLOYMENT[.tfvars]" >&2
+    echo "Usage: tfplan [-destroy] [-target=RESOURCE]... DEPLOY[.tfvars]" >&2
     BRANCH=$(gitbranch)
-    echo " (if DEPLOYMENT is omitted, defaults to current branch '$BRANCH')" >&2
+    echo " (if DEPLOY is omitted, defaults to current branch '$BRANCH')" >&2
     exit 1
 }
 
 gitbranch() {
     git describe --all --exact-match 2>/dev/null | sed 's=.*/=='
 }
+
+REMOTE=$(./getremote.py 2>/dev/null)
+case $? in
+    0) ISREMOTE=true ;;
+    2) ISREMOTE=false ;;
+    *) exec ./getremote.py ;;
+esac
 
 ARGS=
 TARGETS=
@@ -38,8 +45,8 @@ do
     case "$1" in
         -destroy) ARGS=-destroy; shift ;;
         -target=*) TARGETS="$TARGETS $1"; shift ;;
-        -*) usage bad option "'$1'";;
-	*.[^t]*|*.*[^fvars]) usage deployment "'$1'" is not a .tfvars file;;
+        -*) usage bad option "'$1'" ;;
+	*.[^t]*|*.*[^fvars]) usage deployment "'$1'" is not a .tfvars file ;;
         *)
             if [ "" = "$DEPLOYMENT" ]; then
                 DEPLOYMENT=$1
@@ -61,6 +68,12 @@ BASE=$DEPLOYMENT/$(date +%Y%m%d-%H%M%S)$ARGS
 
 if [ ! -f "$DEPLOYMENT.tfvars" ]; then
     usage there is no "$DEPLOYMENT.tfvars" file
+fi
+
+if $ISREMOTE && [ "${REMOTE#*/}" != "$DEPLOYMENT" ]; then
+    echo "Configured to use different remote '$REMOTE' - use tfremote disable"
+    echo " (and then tfremote config '$DEPLOYMENT')"
+    exit 1
 fi
 
 trap "rm -f '$BASE'.{plan,targets,log}; rmdir '$DEPLOYMENT' 2>/dev/null" 0
@@ -115,11 +128,11 @@ if [ "2" = "$ERR" ]; then
     case "${BASE}" in
 	*-destroy*)
 	    rm -f "$DEPLOYMENT/latest.plan"
-	    ln -sf "${BASE#**/}.plan" "$DEPLOYMENT/destroy.plan"
+	    ln -sf "${BASE#*/}.plan" "$DEPLOYMENT/destroy.plan"
 	    ;;
 	*)
 	    rm -f "$DEPLOYMENT/destroy.plan"
-	    ln -sf "${BASE#**/}.plan" "$DEPLOYMENT/latest.plan"
+	    ln -sf "${BASE#*/}.plan" "$DEPLOYMENT/latest.plan"
 	    ;;
     esac
 

@@ -25,10 +25,17 @@ gitbranch() {
     git describe --all --exact-match 2>/dev/null | sed 's=.*/=='
 }
 
+REMOTE=$(./getremote.py 2>/dev/null)
+case $? in
+    0) ISREMOTE=true ;;
+    2) ISREMOTE=false ;;
+    *) exec ./getremote.py ;;
+esac
+
 TARGETS=
 case $1 in
     -*) usage ;;
-    *.[^p]*|*.*[^lan]) usage plan "'$1'" is not a .plan file;;
+    *.[^p]*|*.*[^lan]) usage plan "'$1'" is not a .plan file ;;
     '')
         PLAN=$(gitbranch)
         if [ "" = "$PLAN" -o ! -d "$PLAN" ]; then
@@ -62,6 +69,11 @@ BASE=${PLAN%.plan}
 DEPLOYMENT=${PLAN%%/*}
 TARGETS=$(cat "$BASE.targets" 2>/dev/null)
 
+if $ISREMOTE && [ "${REMOTE#*/}" != "$DEPLOYMENT" ]; then
+    echo "Configured to use different remote '$REMOTE' - use tfremote disable"
+    echo " (and then tfremote config '$DEPLOYMENT')"
+    exit 1
+fi
 
 # Git commit check
 if git status --porcelain *.tf 2>/dev/null | egrep -q '^([^ ]|.[^ ])'; then

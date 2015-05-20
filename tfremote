@@ -1,0 +1,116 @@
+#!/bin/bash
+#
+# Manage Atlas remote state configuration
+#
+
+# The Atlas GUI cannot be used to terraform our private OpenStack cloud, as it
+# does not (and cannot) have the necessary VPN access to the OpenStack API.
+# However, we can use Atlas (or Consul) as a remote (shared) state service.
+
+usage() {
+    test -n "$1" && echo "$0: $*" >&2
+    echo "Usage: tfremote config [ORG_OR_USER/]DEPLOY" >&2
+    echo "                | push | pull | status | disable" >&2
+    BRANCH=$(gitbranch)
+    echo " (if DEPLOY is omitted, defaults to current branch '$BRANCH')" >&2
+    echo " (if ORG_OR_USER is omitted, defaults to '$ORG_USER/')" >&2
+    exit 1
+}
+
+gitbranch() {
+    git describe --all --exact-match 2>/dev/null | sed 's=.*/=='
+}
+
+REMOTE=$(./getremote.py 2>/dev/null)
+case $? in
+    0) ISREMOTE=true ;;
+    2) ISREMOTE=false ;;
+    *) exec ./getremote.py ;;
+esac
+
+ARGS=  # possible future -force or -pull=false option?
+ORG_USER=example
+DEPLOYMENT=
+CMD=$1
+
+case $1 in
+    '') $ISREMOTE && echo "$REMOTE"; usage ;;
+    -*) usage bad option "'$1'" ;;
+    push|pull|disable|status)
+	ARGC=0
+	;;
+    config)
+	ARGC=1
+	;;
+    *) usage unknown argument "'$1'" ;;
+esac
+shift
+if [ $# -gt $ARGC ]; then
+    usage
+fi
+
+case $CMD in
+    push|pull)
+	$ISREMOTE || usage "tfremote $CMD requires tfremote config first"
+	source atlas.env
+	exec terraform remote $CMD
+	;;
+    status)
+	if $ISREMOTE; then
+	    echo "$REMOTE"
+	    ORG=${REMOTE%%/*}
+	    ENV=${REMOTE#*/}
+	    echo "https://atlas.hashicorp.com/$ORG/environments/$ENV/changes"
+	    exit 0
+	else
+	    echo "Using local state"
+	    exit 1
+	fi
+	;;
+    disable)
+	$ISREMOTE || usage "remote state already disabled"
+	LOCAL=${REMOTE#*/}
+	mkdir -p "$LOCAL"
+	source atlas.env
+	# defaults to -pull=true
+	exec terraform remote config -disable \
+	     -state "${LOCAL}/terraform.tfstate"
+	;;
+esac
+
+DEPLOYMENT=$1
+if [ "" = "$DEPLOYMENT" ]; then
+    DEPLOYMENT=$(gitbranch)
+    if [ "" = "$DEPLOYMENT" -o ! -f "$DEPLOYMENT".tfvars ]; then
+	usage
+    fi
+fi
+case $DEPLOYMENT in
+    */*) : ;;
+    *) DEPLOYMENT=$ORG_USER/$DEPLOYMENT ;;
+esac
+
+if $ISREMOTE && [ "$REMOTE" == "$DEPLOYMENT" ]; then
+    echo "Already configured to use '$REMOTE'"
+    exit 0
+fi
+
+# Git staging check
+if git status --porcelain *.tf 2>/dev/null | egrep -q '^([U?]|.[DMU])'; then
+    echo 'unstaged .tf files; use `git add *.tf` or `git stash -u` first'
+    exit 1
+fi
+
+setenv() {
+    env -i HOME=$HOME PATH=$PATH PWD=$PWD SHELL=$SHELL TERM=$TERM USER=$USER \
+           OS_USERNAME=$OS_USERNAME OS_PASSWORD=$OS_PASSWORD                 \
+           ${TF_LOG+TF_LOG=$TF_LOG} ${TF_LOG_PATH+TF_LOG_PATH=$TF_LOG_PATH}  \
+        sh -c "source atlas.env; exec $*" || exit $?
+}
+
+LOCAL=${DEPLOYMENT#*/}
+mkdir -p "$LOCAL"
+
+# default is -pull=true
+setenv terraform remote config -backend-config=name="$DEPLOYMENT" \
+       -state="$LOCAL/terraform.tfstate"
