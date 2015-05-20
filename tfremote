@@ -18,7 +18,15 @@ usage() {
 }
 
 gitbranch() {
-    git describe --all --exact-match 2>/dev/null | sed 's=.*/=='
+    BRANCH=$(git branch --no-color | sed -n '/\* /s///p')
+    case $BRANCH in
+	'(detached from '*/*) : ;;
+	'(detached from '*)
+	    BRANCH=$(git describe --all --exact-match 2>/dev/null)
+	    ;;
+    esac
+    BRANCH=${BRANCH##*/}
+    echo "$BRANCH"
 }
 
 REMOTE=$(./getremote.py 2>/dev/null)
