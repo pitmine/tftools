@@ -5,7 +5,6 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import json
-import os
 import sys
 
 TF_STATE = str('.terraform/terraform.tfstate')
@@ -46,8 +45,8 @@ def name(statefile=TF_STATE):
         raise ValueError('Unknown format in Terraform state')
 
     except IOError as err:
-        if statefile == TF_STATE and os.path.isdir(os.path.dirname(TF_STATE)):
-            # default name, directory exists, but not TF_STATE => not remote
+        if statefile == TF_STATE:
+            # default name but TF_STATE does not exist => not remote
             return None
         raise ValueError(err)
 
