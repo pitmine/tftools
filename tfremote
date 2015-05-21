@@ -113,7 +113,7 @@ setenv() {
     env -i HOME=$HOME PATH=$PATH PWD=$PWD SHELL=$SHELL TERM=$TERM USER=$USER \
            OS_USERNAME=$OS_USERNAME OS_PASSWORD=$OS_PASSWORD                 \
            ${TF_LOG+TF_LOG=$TF_LOG} ${TF_LOG_PATH+TF_LOG_PATH=$TF_LOG_PATH}  \
-        sh -c "eval '$(sed sed 's/^/export /' atlas.env)'; exec $*" || exit $?
+        sh -c "eval '$(sed 's/^/export /' atlas.env)'; exec $*" || exit $?
 }
 
 LOCAL=${DEPLOYMENT#*/}
