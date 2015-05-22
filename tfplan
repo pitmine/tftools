@@ -51,7 +51,9 @@ DEPLOYMENT=
 while [ "" != "$1" ]
 do
     case "$1" in
-        -destroy) ARGS=-destroy; shift ;;
+        -destroy) ARGS="$ARGS $1"; shift ;;
+        -refresh=true) OPTS="$OPTS $1"; shift ;;
+        -refresh=false) OPTS="$OPTS $1"; shift ;;
         -target=*) TARGETS="$TARGETS $1"; shift ;;
         -*) usage bad option "'$1'" ;;
 	*.[^t]*|*.*[^fvars]) usage deployment "'$1'" is not a .tfvars file ;;
@@ -110,7 +112,10 @@ setenv() {
         sh -c "eval '$(sed 's/^/export /' *.env $TENV)'; exec $*" || exit $?
 }
 
-setenv terraform get -update
+case $OPTS in
+    *-refresh=false) : ;;
+    *) setenv terraform get -update ;;
+esac
 
 mkdir -p "$DEPLOYMENT" || exit 1
 for T in $TARGETS
@@ -120,7 +125,7 @@ done > "$BASE.targets"
 
 setenv terraform plan $ARGS -module-depth=-1 -var-file "$DEPLOYMENT.tfvars" \
                       -refresh=true -state="$DEPLOYMENT/terraform.tfstate"  \
-                      -out "$BASE.plan" -detailed-exitcode |
+                      -out "$BASE.plan" -detailed-exitcode $OPTS |
     tee "$BASE.log"
 
 ERR=${PIPESTATUS[0]}
