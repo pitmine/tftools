@@ -55,6 +55,15 @@ do
         -refresh=true) REFRESH="$1"; shift ;;
         -refresh=false) REFRESH="$1"; shift ;;
         -target=*) TARGETS="$TARGETS $1"; shift ;;
+	# attempt to accomodate users used to --options
+	--*=*)
+	    OPT=${1#-}
+	    echo >&2 "[ATTENTION! fix '${1%%=*}' to terraform '${OPT%%=*}']"
+	    shift
+	    set -- "$OPT" "$@"
+	    ;;
+        --*) usage bad option "'$1'" - use "'${1#-}'" or "'${1#-}=...'" ;;
+        -target|-refresh) usage bad option "'$1'" - use "'$1=...'" ;;
         -*) usage bad option "'$1'" ;;
 	*.[^t]*|*.*[^fvars]) usage deployment "'$1'" is not a .tfvars file ;;
         *)
