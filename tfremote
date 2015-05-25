@@ -76,13 +76,15 @@ case $CMD in
 	fi
 	;;
     disable)
-	$ISREMOTE || usage "remote state already disabled"
+	$ISREMOTE || { echo >&2 "remote state already disabled"; exit 0; }
 	LOCAL=${REMOTE#*/}
 	mkdir -p "$LOCAL"
 	eval "$(sed -e 's/^/export /' atlas.env)"
 	# defaults to -pull=true
-	exec terraform remote config -disable \
-	     -state "${LOCAL}/terraform.tfstate"
+	terraform remote config -disable -state "${LOCAL}/terraform.tfstate" \
+	    && ./getremote.py
+	(( 2 == $? ))
+	exit $?
 	;;
 esac
 
