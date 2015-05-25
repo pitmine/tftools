@@ -45,12 +45,12 @@ case $1 in
     -*) usage ;;
     *.[^p]*|*.*[^lan]) usage plan "'$1'" is not a .plan file ;;
     '')
-        PLAN=$(gitbranch)
-        if [ "" = "$PLAN" -o ! -d "$PLAN" ]; then
-            usage
-        fi
-        PLAN=$PLAN/latest.plan
-        ;;
+	PLAN=$(gitbranch)
+	if [ "" = "$PLAN" -o ! -d "$PLAN" ]; then
+	    usage
+	fi
+	PLAN=$PLAN/latest.plan
+	;;
     *) PLAN=$1; shift ;;
 esac
 if [ "0" -lt "$#" ]; then
@@ -59,9 +59,9 @@ fi
 
 case $PLAN in
     *.plan) : ;;
-    *)  if [ ! -f "$PLAN" -a ! -f "$PLAN.plan" -a -L "$PLAN/latest.plan" ]; then
-            PLAN=$PLAN/latest.plan
-        fi ;;
+    *)	if [ ! -f "$PLAN" -a ! -f "$PLAN.plan" -a -L "$PLAN/latest.plan" ]; then
+	    PLAN=$PLAN/latest.plan
+	fi ;;
 esac
 if [ -L "$PLAN" ]; then
     PLANFILE=${PLAN%/*}/`readlink "$PLAN"`
@@ -93,9 +93,9 @@ if [ -f "$DEPLOYMENT.tfenv" ]; then
 fi
 setenv() {
     env -i HOME=$HOME PATH=$PATH PWD=$PWD SHELL=$SHELL TERM=$TERM USER=$USER \
-           OS_USERNAME=$OS_USERNAME OS_PASSWORD=$OS_PASSWORD                 \
-           ${TF_LOG+TF_LOG=$TF_LOG} ${TF_LOG_PATH+TF_LOG_PATH=$TF_LOG_PATH}  \
-        sh -c "eval '$(sed 's/^/export /' *.env $TENV)'; exec $*" || exit $?
+	   OS_USERNAME=$OS_USERNAME OS_PASSWORD=$OS_PASSWORD		     \
+	   ${TF_LOG+TF_LOG=$TF_LOG} ${TF_LOG_PATH+TF_LOG_PATH=$TF_LOG_PATH}  \
+	sh -c "eval '$(sed 's/^/export /' *.env $TENV)'; exec $*" || exit $?
 }
 
 setenv terraform apply -state=$DEPLOYMENT/terraform.tfstate $TARGETS $PLANFILE |

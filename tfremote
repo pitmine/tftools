@@ -10,7 +10,7 @@
 usage() {
     test -n "$1" && echo "$0: $*" >&2
     echo "Usage: tfremote config [ORG_OR_USER/]DEPLOY" >&2
-    echo "                | push | pull | status | disable" >&2
+    echo "		  | push | pull | status | disable" >&2
     BRANCH=$(gitbranch)
     echo " (if DEPLOY is omitted, defaults to current branch '$BRANCH')" >&2
     echo " (if ORG_OR_USER is omitted, defaults to '$ORG_USER/')" >&2
@@ -113,9 +113,9 @@ fi
 
 setenv() {
     env -i HOME=$HOME PATH=$PATH PWD=$PWD SHELL=$SHELL TERM=$TERM USER=$USER \
-           OS_USERNAME=$OS_USERNAME OS_PASSWORD=$OS_PASSWORD                 \
-           ${TF_LOG+TF_LOG=$TF_LOG} ${TF_LOG_PATH+TF_LOG_PATH=$TF_LOG_PATH}  \
-        sh -c "eval '$(sed 's/^/export /' atlas.env)'; exec $*" || exit $?
+	   OS_USERNAME=$OS_USERNAME OS_PASSWORD=$OS_PASSWORD		     \
+	   ${TF_LOG+TF_LOG=$TF_LOG} ${TF_LOG_PATH+TF_LOG_PATH=$TF_LOG_PATH}  \
+	sh -c "eval '$(sed 's/^/export /' atlas.env)'; exec $*" || exit $?
 }
 
 LOCAL=${DEPLOYMENT#*/}

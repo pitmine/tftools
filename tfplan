@@ -51,10 +51,10 @@ DEPLOYMENT=
 while [ "" != "$1" ]
 do
     case "$1" in
-        -destroy) ARGS="$ARGS $1"; shift ;;
-        -refresh=true) REFRESH="$1"; shift ;;
-        -refresh=false) REFRESH="$1"; shift ;;
-        -target=*) TARGETS="$TARGETS $1"; shift ;;
+	-destroy) ARGS="$ARGS $1"; shift ;;
+	-refresh=true) REFRESH="$1"; shift ;;
+	-refresh=false) REFRESH="$1"; shift ;;
+	-target=*) TARGETS="$TARGETS $1"; shift ;;
 	# attempt to accomodate users used to --options
 	--*=*)
 	    OPT=${1#-}
@@ -62,17 +62,17 @@ do
 	    shift
 	    set -- "$OPT" "$@"
 	    ;;
-        --*) usage bad option "'$1'" - use "'${1#-}'" or "'${1#-}=...'" ;;
-        -target|-refresh) usage bad option "'$1'" - use "'$1=...'" ;;
-        -*) usage bad option "'$1'" ;;
+	--*) usage bad option "'$1'" - use "'${1#-}'" or "'${1#-}=...'" ;;
+	-target|-refresh) usage bad option "'$1'" - use "'$1=...'" ;;
+	-*) usage bad option "'$1'" ;;
 	*.[^t]*|*.*[^fvars]) usage deployment "'$1'" is not a .tfvars file ;;
-        *)
-            if [ "" = "$DEPLOYMENT" ]; then
-                DEPLOYMENT=$1
-                shift
-            else
-                usage
-            fi ;;
+	*)
+	    if [ "" = "$DEPLOYMENT" ]; then
+		DEPLOYMENT=$1
+		shift
+	    else
+		usage
+	    fi ;;
     esac
 done
 if [ "" = "$DEPLOYMENT" ]; then
@@ -116,9 +116,9 @@ if [ -f "$DEPLOYMENT.tfenv" ]; then
 fi
 setenv() {
     env -i HOME=$HOME PATH=$PATH PWD=$PWD SHELL=$SHELL TERM=$TERM USER=$USER \
-           OS_USERNAME=$OS_USERNAME OS_PASSWORD=$OS_PASSWORD                 \
-           ${TF_LOG+TF_LOG=$TF_LOG} ${TF_LOG_PATH+TF_LOG_PATH=$TF_LOG_PATH}  \
-        sh -c "eval '$(sed 's/^/export /' *.env $TENV)'; $*" || exit $?
+	   OS_USERNAME=$OS_USERNAME OS_PASSWORD=$OS_PASSWORD		     \
+	   ${TF_LOG+TF_LOG=$TF_LOG} ${TF_LOG_PATH+TF_LOG_PATH=$TF_LOG_PATH}  \
+	sh -c "eval '$(sed 's/^/export /' *.env $TENV)'; $*" || exit $?
 }
 
 # default get + refresh on a 'best-effort' basis
@@ -142,8 +142,8 @@ do
 done > "$BASE.targets"
 
 setenv terraform plan $ARGS -module-depth=-1 -var-file "$DEPLOYMENT.tfvars" \
-                      -state="$DEPLOYMENT/terraform.tfstate"  \
-                      -out "$BASE.plan" -detailed-exitcode $REFRESH |
+		      -state="$DEPLOYMENT/terraform.tfstate"  \
+		      -out "$BASE.plan" -detailed-exitcode $REFRESH |
     tee "$BASE.log"
 
 ERR=${PIPESTATUS[0]}
@@ -152,9 +152,9 @@ ERR=${PIPESTATUS[0]}
 if [ "2" = "$ERR" ]; then
     for OUT in "$BASE".{plan,targets,log}
     do
-        if [ ! -s "$OUT" ]; then
-            rm -f "$OUT"
-        fi
+	if [ ! -s "$OUT" ]; then
+	    rm -f "$OUT"
+	fi
     done
     case "${BASE}" in
 	*-destroy*)
@@ -172,9 +172,9 @@ if [ "2" = "$ERR" ]; then
 elif [ "0" = "$ERR" ]; then
     for OUT in "$BASE".{plan,targets,log}
     do
-        if [ ! -s "$OUT" ]; then
-            rm -f "$OUT"
-        fi
+	if [ ! -s "$OUT" ]; then
+	    rm -f "$OUT"
+	fi
     done
 
     rm -f "$DEPLOYMENT/latest.plan" "$DEPLOYMENT/destroy.plan"
