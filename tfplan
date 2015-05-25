@@ -52,8 +52,8 @@ while [ "" != "$1" ]
 do
     case "$1" in
         -destroy) ARGS="$ARGS $1"; shift ;;
-        -refresh=true) OPTS="$OPTS $1"; shift ;;
-        -refresh=false) OPTS="$OPTS $1"; shift ;;
+        -refresh=true) REFRESH="$1"; shift ;;
+        -refresh=false) REFRESH="$1"; shift ;;
         -target=*) TARGETS="$TARGETS $1"; shift ;;
         -*) usage bad option "'$1'" ;;
 	*.[^t]*|*.*[^fvars]) usage deployment "'$1'" is not a .tfvars file ;;
@@ -109,13 +109,22 @@ setenv() {
     env -i HOME=$HOME PATH=$PATH PWD=$PWD SHELL=$SHELL TERM=$TERM USER=$USER \
            OS_USERNAME=$OS_USERNAME OS_PASSWORD=$OS_PASSWORD                 \
            ${TF_LOG+TF_LOG=$TF_LOG} ${TF_LOG_PATH+TF_LOG_PATH=$TF_LOG_PATH}  \
-        sh -c "eval '$(sed 's/^/export /' *.env $TENV)'; exec $*" || exit $?
+        sh -c "eval '$(sed 's/^/export /' *.env $TENV)'; $*" || exit $?
 }
 
-case $OPTS in
-    *-refresh=false) : ;;
-    *) setenv terraform get -update ;;
+# default get + refresh on a 'best-effort' basis
+RUNGET=setenv
+RUNREFRESH=:
+DONTFAIL='|| true'
+case $REFRESH in
+    *-refresh=false) RUNGET=: ;;
+    *-refresh=true) DONTFAIL= ;;
+    *) RUNREFRESH=setenv; REFRESH=-refresh=false ;;
 esac
+# (maybe) get modules and refresh state
+$RUNGET terraform get -update $DONTFAIL
+$RUNREFRESH terraform refresh -var-file "$DEPLOYMENT.tfvars" \
+	      -state="$DEPLOYMENT/terraform.tfstate" $DONTFAIL
 
 mkdir -p "$DEPLOYMENT" || exit 1
 for T in $TARGETS
@@ -124,8 +133,8 @@ do
 done > "$BASE.targets"
 
 setenv terraform plan $ARGS -module-depth=-1 -var-file "$DEPLOYMENT.tfvars" \
-                      -refresh=true -state="$DEPLOYMENT/terraform.tfstate"  \
-                      -out "$BASE.plan" -detailed-exitcode $OPTS |
+                      -state="$DEPLOYMENT/terraform.tfstate"  \
+                      -out "$BASE.plan" -detailed-exitcode $REFRESH |
     tee "$BASE.log"
 
 ERR=${PIPESTATUS[0]}
