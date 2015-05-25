@@ -70,7 +70,7 @@ elif [ -f "$PLAN" ]; then
 else
     usage there is no "$PLAN" file
 fi
-BASE=${PLAN%.plan}
+BASE=${PLANFILE%.plan}
 
 DEPLOYMENT=${PLAN%%/*}
 TARGETS=$(cat "$BASE.targets" 2>/dev/null)
