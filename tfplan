@@ -138,7 +138,7 @@ $RUNREFRESH terraform refresh -var-file "$DEPLOYMENT.tfvars" \
 mkdir -p "$DEPLOYMENT" || exit 1
 for T in $TARGETS
 do
-    echo -- $T
+    printf '%s\n' "$T"
 done > "$BASE.targets"
 
 setenv terraform plan $ARGS -module-depth=-1 -var-file "$DEPLOYMENT.tfvars" \
