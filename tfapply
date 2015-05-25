@@ -82,7 +82,7 @@ if $ISREMOTE && [ "${REMOTE#*/}" != "$DEPLOYMENT" ]; then
 fi
 
 # Git commit check
-if git status --porcelain *.tf 2>/dev/null | egrep -q '^([^ ]|.[^ ])'; then
+if git status --porcelain 2>/dev/null | egrep '^([^ ]|.[^ ]).*\.tf$'; then
     echo 'uncommitted .tf files; use `git commit` or `git stash -u` first'
     exit 1
 fi

@@ -106,7 +106,7 @@ if $ISREMOTE && [ "$REMOTE" == "$DEPLOYMENT" ]; then
 fi
 
 # Git staging check
-if git status --porcelain *.tf 2>/dev/null | egrep -q '^([U?]|.[DMU])'; then
+if git status --porcelain 2>/dev/null | egrep '^([U?]|.[DMU]).*\.tf$'; then
     echo 'unstaged .tf files; use `git add *.tf` or `git stash -u` first'
     exit 1
 fi
