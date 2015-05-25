@@ -124,7 +124,7 @@ esac
 # (maybe) get modules and refresh state
 $RUNGET terraform get -update $DONTFAIL
 $RUNREFRESH terraform refresh -var-file "$DEPLOYMENT.tfvars" \
-	      -state="$DEPLOYMENT/terraform.tfstate" $DONTFAIL
+	      -state="$DEPLOYMENT/terraform.tfstate" $TARGETS $DONTFAIL
 
 mkdir -p "$DEPLOYMENT" || exit 1
 for T in $TARGETS
