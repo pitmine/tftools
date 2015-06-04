@@ -125,15 +125,21 @@ setenv() {
 RUNGET=setenv
 RUNREFRESH=:
 DONTFAIL='|| true'
+STATE=$DEPLOYMENT/terraform.tfstate
 case $REFRESH in
     *-refresh=false) RUNGET=: ;;
     *-refresh=true) DONTFAIL= ;;
-    *) RUNREFRESH=setenv; REFRESH=-refresh=false ;;
+    *)
+	if test -e "$STATE" || $ISREMOTE; then
+	    RUNREFRESH=setenv
+	fi
+	REFRESH=-refresh=false
+	;;
 esac
 # (maybe) get modules and refresh state
 $RUNGET terraform get -update $DONTFAIL
 $RUNREFRESH terraform refresh -var-file "$DEPLOYMENT.tfvars" \
-	      -state="$DEPLOYMENT/terraform.tfstate" $TARGETS $DONTFAIL
+	      -state="$STATE" $TARGETS $DONTFAIL
 
 mkdir -p "$DEPLOYMENT" || exit 1
 for T in $TARGETS
@@ -142,7 +148,7 @@ do
 done > "$BASE.targets"
 
 setenv terraform plan $ARGS -module-depth=-1 -var-file "$DEPLOYMENT.tfvars" \
-		      -state="$DEPLOYMENT/terraform.tfstate"  \
+		      -state="$STATE"                                       \
 		      -out "$BASE.plan" -detailed-exitcode $REFRESH |
     tee "$BASE.log"
 
