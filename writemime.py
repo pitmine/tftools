@@ -11,6 +11,7 @@ http://docs.python.org/library/email-examples.html
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import argparse
 import gzip
 import os
 import sys
@@ -18,7 +19,6 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from optparse import OptionParser
 
 MAPPINGS = {
     '#include': 'text/x-include-url',
@@ -84,30 +84,31 @@ def main():
     """
     outer = MIMEMultipart()
 
-    parser = OptionParser()
+    parser = argparse.ArgumentParser()
 
-    parser.add_option("-o", "--output", dest="output",
-        help="write output to FILE [default %default]", metavar="FILE",
-        default="-")
-    parser.add_option("-z", "--gzip", dest="compress", action="store_true",
-        help="compress output", default=False)
-    parser.add_option("-d", "--default", dest="deftype",
-        help="default mime type [default %default]", default="text/plain")
-    parser.add_option("--delim", dest="delim",
-        help="delimiter [default %default]", default=":")
+    parser.add_argument('-o', '--output', dest='output', default='-',
+                        help='write output to FILE [default standard output]',
+                        metavar='FILE')
+    parser.add_argument('-z', '--gzip', dest='compress', default=False,
+                        help='compress output', action='store_true')
+    parser.add_argument('-d', '--default', dest='deftype', default='text/plain',
+                        help="default text MIME type [default '%(default)s']")
+    parser.add_argument('--delim', dest='delim', default=':',
+                        help="MIME suffix delimiter [default '%(default)s']")
 
-    (options, args) = parser.parse_args()
+    parser.add_argument('parts', nargs='+',
+                        help='part filename and optional MIME type',
+                        metavar='PARTFILE[:MIME/TYPE]')
 
-    if (len(args)) < 1:
-        parser.error("Must give file list for parts; see '--help'")
+    args = parser.parse_args()
 
-    for arg in args:
-        argtype = arg.split(options.delim, 1)
+    for arg in args.parts:
+        argtype = arg.split(args.delim, 1)
         path = argtype[0]
         if len(argtype) > 1:
             mtype = argtype[1]
         else:
-            mtype = get_type(path, options.deftype)
+            mtype = get_type(path, args.deftype)
 
         maintype, subtype = mtype.split('/', 1)
         if maintype == 'text':
@@ -130,17 +131,17 @@ def main():
 
         outer.attach(msg)
 
-    if options.output is '-':
+    if args.output is '-':
         if hasattr(sys.stdout, 'buffer'):
             # We want to write bytes not strings
             ofile = sys.stdout.buffer  # pylint: disable=E1101
         else:
             ofile = sys.stdout
     else:
-        ofile = open(options.output, 'wb')
+        ofile = open(args.output, 'wb')
 
-    if options.compress:
-        gfile = gzip.GzipFile(fileobj=ofile, filename=options.output)
+    if args.compress:
+        gfile = gzip.GzipFile(fileobj=ofile, filename=args.output)
         gfile.write(outer.as_string().encode())
         gfile.close()
     else:
