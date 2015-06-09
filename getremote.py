@@ -22,9 +22,10 @@ def name(statefile=TF_STATE):
 
     :param statefile: Filename for Terraform state file
     :type statefile: str
-    :returns: str Atlas remote in user-org/env format e.g. 'jane_doe/example'
+    :returns: Atlas remote in user-org/env format e.g. 'jane_doe/example'
     :returns: None if the state is local
-    :raises: ValueError if the state file is missing or cannot be parsed
+    :rtype: str
+    :raises ValueError: if the state file is missing or cannot be parsed
     """
     try:
         with open(statefile) as tf_state:
@@ -54,7 +55,8 @@ def name(statefile=TF_STATE):
 def main():
     """Print Atlas remote name.
 
-    :returns: int Exit code (1 on format error/file not found, 2 if not remote)
+    :returns: Exit code (1 on error)
+    :rtype: int
     """
     try:
         remote_name = name()
