@@ -1,20 +1,26 @@
-#!/usr/bin/python3
-# largely taken from python examples
-# http://docs.python.org/library/email-examples.html
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Generate MIME multi-part user-data file.
 
+Adapted from bin/write-mime-multipart
+http://bazaar.launchpad.net/~cloud-utils-dev/cloud-utils/trunk/revision/266.
+
+Largely taken from python examples at
+http://docs.python.org/library/email-examples.html
+"""
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+import gzip
 import os
 import sys
-
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from optparse import OptionParser
-import gzip
 
-COMMASPACE = ', '
-
-starts_with_mappings = {
+MAPPINGS = {
     '#include': 'text/x-include-url',
     '#include-once': 'text/x-include-once-url',
     '#!': 'text/x-shellscript',
@@ -25,37 +31,58 @@ starts_with_mappings = {
     '#cloud-boothook': 'text/cloud-boothook'
 }
 
+
+# noinspection PyRedundantParentheses
 def try_decode(data):
+    """Convert file (first line) data to Unicode if possible.
+
+    :param data: (first line) contents of part file
+    :type data: bytes
+    :return: tuple with Unicode text indication and (decoded or binary) data
+    :rtype: tuple(bool, str)
+    """
     try:
         return (True, data.decode())
     except UnicodeDecodeError:
         return (False, data)
 
+
 def get_type(fname, deftype):
+    """Determine MIME type of file based on first line contents.
+
+    :param fname: filename to examine for MIME type
+    :type fname: str
+    :param deftype: default type for text (decodable Unicode) contents
+    :type deftype: str
+    :return: MIME type for file
+    :rtype: str
+    """
     rtype = deftype
 
-    with open(fname, "rb") as f:
-        (can_be_decoded, line) = try_decode(f.readline())
+    with open(fname, 'rb') as partfile:
+        (can_be_decoded, line) = try_decode(partfile.readline())
 
     if can_be_decoded:
         # slist is sorted longest first
-        slist = sorted(list(starts_with_mappings.keys()), key=lambda e: 0 - len(e))
+        slist = sorted(list(MAPPINGS.keys()),
+                       key=lambda e: 0 - len(e))
         for sstr in slist:
             if line.startswith(sstr):
-                rtype = starts_with_mappings[sstr]
+                rtype = MAPPINGS[sstr]
                 break
     else:
         rtype = 'application/octet-stream'
-            
-    return(rtype)
+
+    return rtype
 
 
 def main():
+    """Generate MIME multi-part user-data file from specified parts.
+
+    :raises IOError: (FileNotFoundError) when specified part file not found
+    :raises IOError: (PermissionError) when specified part file cannot be read
+    """
     outer = MIMEMultipart()
-    #outer['Subject'] = 'Contents of directory %s' % os.path.abspath(directory)
-    #outer['To'] = COMMASPACE.join(opts.recipients)
-    #outer['From'] = opts.sender
-    #outer.preamble = 'You will not see this in a MIME-aware mail reader.\n'
 
     parser = OptionParser()
 
@@ -72,44 +99,45 @@ def main():
     (options, args) = parser.parse_args()
 
     if (len(args)) < 1:
-        parser.error("Must give file list see '--help'")
+        parser.error("Must give file list for parts; see '--help'")
 
     for arg in args:
-        t = arg.split(options.delim, 1)
-        path = t[0]
-        if len(t) > 1:
-            mtype = t[1]
+        argtype = arg.split(options.delim, 1)
+        path = argtype[0]
+        if len(argtype) > 1:
+            mtype = argtype[1]
         else:
             mtype = get_type(path, options.deftype)
 
         maintype, subtype = mtype.split('/', 1)
         if maintype == 'text':
-            fp = open(path)
+            partfile = open(path)
             # Note: we should handle calculating the charset
-            msg = MIMEText(fp.read(), _subtype=subtype)
-            fp.close()
+            msg = MIMEText(partfile.read(), _subtype=subtype)
+            partfile.close()
         else:
-            fp = open(path, 'rb')
+            partfile = open(path, 'rb')
             msg = MIMEBase(maintype, subtype)
-            msg.set_payload(fp.read())
-            fp.close()
+            msg.set_payload(partfile.read())
+            partfile.close()
             # Encode the payload using Base64
             encoders.encode_base64(msg)
 
         # Set the filename parameter
+        # noinspection PyUnresolvedReferences
         msg.add_header('Content-Disposition', 'attachment',
-            filename=os.path.basename(path))
+                       filename=os.path.basename(path))
 
         outer.attach(msg)
 
-    if options.output is "-":
-        if hasattr(sys.stdout, "buffer"):
+    if options.output is '-':
+        if hasattr(sys.stdout, 'buffer'):
             # We want to write bytes not strings
-            ofile = sys.stdout.buffer
+            ofile = sys.stdout.buffer  # pylint: disable=E1101
         else:
             ofile = sys.stdout
     else:
-        ofile = open(options.output, "wb")
+        ofile = open(options.output, 'wb')
 
     if options.compress:
         gfile = gzip.GzipFile(fileobj=ofile, filename=options.output)

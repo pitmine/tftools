@@ -1,6 +1,5 @@
 -   repo: git://github.com/pre-commit/pre-commit-hooks
-    # sha: v0.4.2
-    sha: 15b678e9c67c42765c3d579e40672a332f4366d7
+    sha: v0.4.2
     hooks:
     # added in v0.4.2 or 9ce45609a92f648c87b42207410386fd69a5d1e5
     -   id: detect-private-key
@@ -26,24 +25,24 @@
     -   id: flake8
 
 -   repo: git://github.com/pre-commit/mirrors-pylint
-    sha: v1.3.1
+    sha: v1.4.3
     hooks:
     -   id: pylint
         args: ['--rcfile=tox.ini']
-        files: '^(?!setup.py$).*\.py$'
+        files: ^(?!setup.py$).*\.py$
 
 -   repo: git://github.com/FalconSocial/pre-commit-python-sorter
     sha: 1.0.1
     hooks:
     -   id: python-import-sorter
-        files: '^(?!setup.py$).*\.py$'
         # args: ['--silent-overwrite']
+        files: ^(?!setup.py$).*\.py$
 
 -   repo: git://github.com/FalconSocial/pre-commit-mirrors-pep257
     sha: v0.3.2
     hooks:
     -   id: pep257
-        files: '.*(?<!__init__)\.py$'
+        files: .*(?<!__init__)\.py$
 
 #-   repo: git@github.com:asottile/reorder_python_imports
 #    sha: 3d86483455ab5bd06cc1069fdd5ac57be5463f10
