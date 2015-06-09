@@ -112,15 +112,13 @@ def main():
 
         maintype, subtype = mtype.split('/', 1)
         if maintype == 'text':
-            partfile = open(path)
-            # Note: we should handle calculating the charset
-            msg = MIMEText(partfile.read(), _subtype=subtype)
-            partfile.close()
+            with open(path) as partfile:
+                # Note: we should handle calculating the charset
+                msg = MIMEText(partfile.read(), _subtype=subtype)
         else:
-            partfile = open(path, 'rb')
-            msg = MIMEBase(maintype, subtype)
-            msg.set_payload(partfile.read())
-            partfile.close()
+            with open(path, 'rb') as partfile:
+                msg = MIMEBase(maintype, subtype)
+                msg.set_payload(partfile.read())
             # Encode the payload using Base64
             encoders.encode_base64(msg)
 
@@ -150,6 +148,12 @@ def main():
     ofile.close()
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+        sys.exit(0)
+    except IOError as err:
+        print('{0}: {1}'.format(os.path.basename(sys.argv[0]), err),
+              file=sys.stderr)
+        sys.exit(1)
 
 # vi: ts=4 expandtab
