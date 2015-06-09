@@ -13,6 +13,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import argparse
 import gzip
+import mimetypes
 import os
 import sys
 from email import encoders
@@ -30,6 +31,10 @@ MAPPINGS = {
     '#part-handler': 'text/part-handler',
     '#cloud-boothook': 'text/cloud-boothook'
 }
+
+# Preload some common script extensions into MIME types lookup
+for ext in ('sh', 'py', 'rb'):
+    mimetypes.types_map['.' + ext] = 'text/x-shellscript'
 
 
 # noinspection PyRedundantParentheses
@@ -57,10 +62,14 @@ def get_type(fname, deftype):
     :return: MIME type for file
     :rtype: str
     """
-    rtype = deftype
-
-    with open(fname, 'rb') as partfile:
-        (can_be_decoded, line) = try_decode(partfile.readline())
+    (rtype, encoding) = mimetypes.guess_type(fname)
+    if rtype is None:
+        rtype = deftype
+    if encoding is not None:
+        can_be_decoded = False
+    else:
+        with open(fname, 'rb') as partfile:
+            (can_be_decoded, line) = try_decode(partfile.readline())
 
     if can_be_decoded:
         # slist is sorted longest first
@@ -70,7 +79,7 @@ def get_type(fname, deftype):
             if line.startswith(sstr):
                 rtype = MAPPINGS[sstr]
                 break
-    else:
+    elif rtype is None or rtype.startswith('text/'):
         rtype = 'application/octet-stream'
 
     return rtype
