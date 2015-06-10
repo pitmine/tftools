@@ -1,0 +1,97 @@
+#!/bin/sh
+#
+# Set up (if not already present) persistent mountpoint for volume
+#
+
+# Cloud-init directory where this will be placed as MIME part
+# (instance is a symlink to instances/$INSTANCE_UUID)
+
+SCRIPTS=/var/lib/cloud/instance/scripts
+
+# Exit without doing anything if no arguments given (cloud-init part handler)
+if [ $# != 2 ]; then
+    echo >&2 "Usage:  $0 VOLUME_DEV MOUNTPOINT"
+    echo >&2 "    e.g $0 vdc /opt"
+    [ $# = 0 ]
+    exit $?
+fi
+
+VOL=$1
+MNT=$2
+
+HOST=`hostname`
+#HOST=$${H%%.*}
+
+case $MNT in
+    /*) : ;;
+    *) MNT=/$MNT ;;
+esac
+if grep "[ 	]$MNT" /etc/fstab; then
+    echo "$MNT already present in /etc/fstab - not changing anything"
+    exit 1
+fi
+
+mkdir -p $MNT
+NAME=`echo $MNT | tr ':./_' '----'`
+
+case $VOL in
+    /dev/*) DEV=$VOL ;;
+    *) DEV=/dev/$VOL ;;
+esac
+
+PARTS="`blkid`"
+case $DEV in
+    *[0-9])
+        # check partition
+        case $PARTS in
+            *"$DEV: "*)
+                eval `echo "$PARTS" | sed -n "s|^$DEV: ||p"`
+                ;;
+            *)
+                if [ "$DEV: data" = "`file -s $DEV`" ]; then
+                    mkfs -t ext4 -T big -L $HOST$NAME $DEV || exit $?
+                    eval `blkid $DEV | sed -n "s|^$DEV: ||p"`
+                else
+                    echo "partition '$DEV' not blank - not changing anything"
+                    exit 1
+                fi
+                ;;
+        esac
+        ;;
+    *)
+        # check volume
+        case $PARTS in
+            *"$DEV[1-9]: "*|*"$DEV[1-9][0-9]: "*)
+                echo "volume '$DEV' has partitions - not changing anything"
+                exit 1
+                ;;
+            *"$DEV: "*)
+                eval `echo "$PARTS" | sed -n "s|^$DEV: ||p"`
+                ;;
+            *)
+                if [ "$DEV: data" = "`file -s $DEV`" ]; then
+                    mkfs -t ext4 -T big -L $HOST$NAME $DEV || exit $?
+                    eval `blkid $DEV | sed -n "s|^$DEV: ||p"`
+                else
+                    echo "volume '$DEV' not blank - not changing anything"
+                    exit 1
+                fi
+                ;;
+        esac
+        ;;
+esac
+
+# eval should have set LABEL and/or UUID and TYPE
+if [ -n "$LABEL" ] && ! grep -q "LABEL=$LABEL[ 	]" /etc/fstab; then
+    SRC=LABEL=$LABEL
+elif [ -n "$UUID" ] && ! grep -q "UUID=$UUID[ 	]" /etc/fstab; then
+    SRC=UUID=$UUID
+else
+    SRC=$DEV
+fi
+if [ -z "$TYPE" ]; then
+    TYPE=auto
+fi
+echo "$SRC	$MNT	$TYPE	defaults	0 0" >> /etc/fstab
+
+mount $MNT

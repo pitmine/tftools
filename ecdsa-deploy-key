@@ -1,0 +1,36 @@
+#!/bin/sh
+#
+# Set up (if not already present) SSH ECDSA deploy key
+#
+
+# Cloud-init directory where this will be placed as MIME part
+# (instance is a symlink to instances/$INSTANCE_UUID)
+
+SCRIPTS=/var/lib/cloud/instance/scripts
+
+# Exit without doing anything if no arguments given (cloud-init part handler)
+if [ $# != 2 ]; then
+    echo >&2 "Usage:  $0 USER METAKEY"
+    echo >&2 "    e.g $0 root deploykey"
+    [ $# = 0 ]
+    exit $?
+fi
+
+USER=$1
+METAKEY=$2
+
+# get ECDSA key from metadata
+eval "`$SCRIPTS/getconfig.py`"
+
+# yes, that's two levels of quoting around the key to preserve newlines
+export KEY="`eval echo '"$'$METAKEY'"'`"
+
+sudo -HE sh -ec '
+    umask 077
+    mkdir -p $HOME/.ssh
+    cd $HOME/.ssh
+    echo "$KEY" > id_ecdsa
+    chmod 600 id_ecdsa
+'
+
+

@@ -8,7 +8,7 @@
     -   id: check-merge-conflict
         # files: ^(?!git-crypt).*(?<!\.md)$
     -   id: trailing-whitespace
-        files: ^tf|\.(py|tfvars|tf|tfenv|env|yaml|pem)$
+        files: ^tf|-|\.(py|tfvars|tf|tfenv|env|yaml|pem|key|mock)$
     -   id: end-of-file-fixer
     -   id: check-added-large-files
         # args: [--maxkb=500] # default reject files >= 500KB

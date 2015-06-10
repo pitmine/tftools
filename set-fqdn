@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+# Create entries for FQDN in /etc/hosts for every non-loopback interface IP
+#
+
+# Cloud-init directory where this will be placed as MIME part
+# (instance is a symlink to instances/$INSTANCE_UUID)
+
+SCRIPTS=/var/lib/cloud/instance/scripts
+
+# Exit without doing anything if no arguments given (cloud-init part-handler)
+if [ $# = 0 ]; then
+    echo >&2 "Usage:  $0 FQDN [ALIAS ...]"
+    echo >&2 "    e.g $0 something.example.net something some-thing"
+    exit 0
+fi
+
+HOST=`hostname`
+FQDN=$1
+shift
+
+CNAMES=`for A in $* $HOST; do echo $A; done | grep '\.' | sort -u`
+ALIASES=`for A in $* $FQDN $HOST; do echo $A; done | sed 's/\..*$//' | sort -u`
+
+IPS=`hostname -I`
+umask 022
+egrep -v "`echo $IPS | sed 's/ /|/'`" /etc/hosts > /etc/hosts.new
+for IP in $IPS
+do
+  echo $IP $FQDN $CNAMES $ALIASES >> /etc/hosts.new
+done
+mv /etc/hosts.new /etc/hosts
