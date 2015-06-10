@@ -9,4 +9,6 @@ terraform.tfvars
 *.plan
 *.failed
 *.pyc
+*.pub
+*.userdata
 .tox
