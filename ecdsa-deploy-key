@@ -19,8 +19,8 @@ fi
 USER=$1
 METAKEY=$2
 
-# get ECDSA key from metadata
-eval "`$SCRIPTS/getconfig.py`"
+# get ECDSA key from metadata; explicit 'meta' argument needed to unsuppress key
+eval "`$SCRIPTS/getconfig.py meta`"
 
 # yes, that's two levels of quoting around the key to preserve newlines
 export KEY="`eval echo '"$'$METAKEY'"'`"

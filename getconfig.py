@@ -121,7 +121,10 @@ def main():
         meta_data = metadata(filename)
         if isinstance(meta_data[key], dict):
             for subkey in meta_data[key].keys():
-                print(outformat(subkey, meta_data[key][subkey]))
+                output = outformat(subkey, meta_data[key][subkey])
+                # suppress embedded private keys without explicit 'meta' arg
+                if len(sys.argv) > 1 or 'PRIVATE KEY' not in output:
+                    print(output)
         else:
             print(outformat(key, meta_data[key]))
         return 0
