@@ -26,7 +26,7 @@ case $MNT in
     /*) : ;;
     *) MNT=/$MNT ;;
 esac
-if grep "[ 	]$MNT" /etc/fstab; then
+if egrep "\\s$MNT\\b" /etc/fstab; then
     echo "$MNT already present in /etc/fstab - not changing anything"
     exit 1
 fi
@@ -51,8 +51,11 @@ case $DEV in
                 if [ "$DEV: data" = "`file -s $DEV`" ]; then
                     mkfs -t ext4 -T big -L $HOST$NAME $DEV || exit $?
                     eval `blkid $DEV | sed -n "s|^$DEV: ||p"`
-                else
+                elif [ -e "$DEV" ]; then
                     echo "partition '$DEV' not blank - not changing anything"
+                    exit 1
+                else
+                    echo "partition '$DEV' does not exist - cannot mount"
                     exit 1
                 fi
                 ;;
@@ -72,8 +75,11 @@ case $DEV in
                 if [ "$DEV: data" = "`file -s $DEV`" ]; then
                     mkfs -t ext4 -T big -L $HOST$NAME $DEV || exit $?
                     eval `blkid $DEV | sed -n "s|^$DEV: ||p"`
-                else
+                elif [ -e "$DEV" ]; then
                     echo "volume '$DEV' not blank - not changing anything"
+                    exit 1
+                else
+                    echo "volume '$DEV' does not exist - cannot mount"
                     exit 1
                 fi
                 ;;
@@ -82,9 +88,9 @@ case $DEV in
 esac
 
 # eval should have set LABEL and/or UUID and TYPE
-if [ -n "$LABEL" ] && ! grep -q "LABEL=$LABEL[ 	]" /etc/fstab; then
+if [ -n "$LABEL" ] && ! egrep -q "LABEL=$LABEL\\s" /etc/fstab; then
     SRC=LABEL=$LABEL
-elif [ -n "$UUID" ] && ! grep -q "UUID=$UUID[ 	]" /etc/fstab; then
+elif [ -n "$UUID" ] && ! egrep -q "UUID=$UUID\\s" /etc/fstab; then
     SRC=UUID=$UUID
 else
     SRC=$DEV
@@ -92,6 +98,6 @@ fi
 if [ -z "$TYPE" ]; then
     TYPE=auto
 fi
-echo "$SRC	$MNT	$TYPE	defaults	0 0" >> /etc/fstab
+printf "$SRC\\t$MNT\\t$TYPE\\tdefaults\\t0 0\\n" >> /etc/fstab
 
 mount $MNT
