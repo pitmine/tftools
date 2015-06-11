@@ -25,12 +25,12 @@ eval "`$SCRIPTS/getconfig.py meta`"
 # yes, that's two levels of quoting around the key to preserve newlines
 export KEY="`eval echo '"$'$METAKEY'"'`"
 
-sudo -HE sh -ec '
+sudo -HE -u $USER sh -ec '
     umask 077
-    mkdir -p $HOME/.ssh
-    cd $HOME/.ssh
-    echo "$KEY" > id_ecdsa
-    chmod 600 id_ecdsa
+    mkdir -p "$HOME/.ssh"
+    KFILE=$HOME/.ssh/id_ecdsa
+    echo "$KEY" > "$KFILE"
+    chmod 600 "$KFILE"
+    ssh-keygen -y -f "$KFILE" | sed "s/\$/ $USER@`hostname -f`/" > "$KFILE.pub"
+    chmod 644 "$KFILE.pub"
 '
-
-
