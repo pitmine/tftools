@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+# Maybe register Chef server's client with server, update runlist from metadata
+
+# Cloud-init directory where this will be placed as MIME part
+# (instance is a symlink to instances/$INSTANCE_UUID)
+
+SCRIPTS=/var/lib/cloud/instance/scripts
+
+# Exit without doing anything if no arguments given (cloud-init part-handler)
+if [ $# != 1 -o "run" != "$1" ]; then
+    echo >&2 "Usage:  $0 run"
+    [ $# = 0 ]
+    exit $?
+fi
+
+# cloud-init does not set HOME, but it is needed for chef-server cookbook
+export HOME=/root
+
+# get roles and recipes
+roles=
+recipes=
+eval "`$SCRIPTS/getconfig.py`"
+
+expand() {
+    TYPE=$1
+    ITEMS=
+    eval echo '$'"$TYPE"s | tr , '\n' |
+        {
+            while read ITEM
+            do
+                ITEM=$TYPE'['$ITEM']'
+                if [ -z "$ITEMS" ]; then
+                    ITEMS="$ITEM"
+                else
+                    ITEMS="$ITEMS,$ITEM"
+                fi
+            done
+            if [ -z "$RUNLIST" ]; then
+                echo "$ITEMS"
+            else
+                echo "$RUNLIST,$ITEMS"
+            fi
+        }
+}
+
+RUNLIST=
+RUNLIST=`expand role`
+RUNLIST=`expand recipe`
+
+echo chef-client --runlist $RUNLIST
