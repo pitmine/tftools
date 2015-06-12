@@ -110,6 +110,16 @@ if [ -f .git/hooks/pre-commit ]; then
      { pre-commit run 2>&1 || exit 1; } | grep -v Skipped
 fi
 
+if [ -f Makefile ] && UD="`egrep 'filename\s*=\s*"[^"]*\.userdata"' *.tf`"; then
+    STAMP=$(date +%Y%m%d%H%M%S)
+    for UDF in $(echo "$UD" | sed -n 's/.*"\([^"]*\.userdata\)".*/\1/p')
+    do
+        cp -p "$UDF" "$UDF"."$STAMP"
+        make "$UDF"
+        diff -q "$UDF" "$UDF"."$STAMP" && rm -f "$UDF"."$STAMP"
+    done
+fi
+
 TENV=
 if [ -f "$DEPLOYMENT.tfenv" ]; then
     TENV=$DEPLOYMENT.tfenv
