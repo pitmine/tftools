@@ -83,7 +83,7 @@ if [ "" = "$DEPLOYMENT" ]; then
 fi
 
 DEPLOYMENT=${DEPLOYMENT%.tfvars}
-BASE=$DEPLOYMENT/$(date +%Y%m%d-%H%M%S)$ARGS
+BASE=$DEPLOYMENT/$(date +%Y%m%d-%H%M%S)${ARGS# }
 
 if [ ! -f "$DEPLOYMENT.tfvars" ]; then
     usage there is no "$DEPLOYMENT.tfvars" file
