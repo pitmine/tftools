@@ -8,11 +8,12 @@
 SCRIPTS=/var/lib/cloud/instance/scripts
 
 # Exit without doing anything if no arguments given (cloud-init part-handler)
-if [ $# != 1 -o "run" != "$1" ]; then
-    echo >&2 "Usage:  $0 run"
+if [ $# != 1 ]; then
+    echo >&2 "Usage: $0 INSTANCE"
     [ $# = 0 ]
     exit $?
 fi
+INSTANCE=$1
 
 # cloud-init does not set HOME, but it is needed for chef-server cookbook
 export HOME=/root
@@ -45,7 +46,26 @@ expand() {
 }
 
 RUNLIST=
-RUNLIST=`expand role`
-RUNLIST=`expand recipe`
 
-echo chef-client --runlist $RUNLIST
+NEWRUNLIST=`expand recipe`
+if [ -n "$NEWRUNLIST" -a "$NEWRUNLIST" != "$RUNLIST" ]; then
+    chef-client --runlist $NEWRUNLIST && RUNLIST=$NEWRUNLIST
+fi
+
+# role may not be present if restore failed, make a second pass
+NEWRUNLIST=`expand role`
+if [ -n "$NEWRUNLIST" -a "$NEWRUNLIST" != "$RUNLIST" ]; then
+    chef-client --runlist $NEWRUNLIST && RUNLIST=$NEWRUNLIST
+fi
+
+# add role based on instance name, if it exists
+roles=$INSTANCE
+NEWRUNLIST=`expand role`
+if [ -n "$NEWRUNLIST" -a "$NEWRUNLIST" != "$RUNLIST" ]; then
+    chef-client --runlist $NEWRUNLIST && RUNLIST=$NEWRUNLIST
+fi
+
+# failsafe attempt to run common role if nothing else specified
+if [ -z "$RUNLIST" ]; then
+    chef-client --runlist 'role[common]'
+fi
