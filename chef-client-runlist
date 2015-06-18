@@ -15,6 +15,9 @@ if [ $# != 1 ]; then
 fi
 INSTANCE=$1
 
+# Override cloud-init log file with stdout - visible from OpenStack console
+OPTS="-L -"
+
 # cloud-init does not set HOME, but it is needed for chef-server cookbook
 export HOME=/root
 
@@ -49,23 +52,23 @@ RUNLIST=
 
 NEWRUNLIST=`expand recipe`
 if [ -n "$NEWRUNLIST" -a "$NEWRUNLIST" != "$RUNLIST" ]; then
-    chef-client --runlist $NEWRUNLIST && RUNLIST=$NEWRUNLIST
+    chef-client $OPTS --runlist $NEWRUNLIST && RUNLIST=$NEWRUNLIST
 fi
 
 # role may not be present if restore failed, make a second pass
 NEWRUNLIST=`expand role`
 if [ -n "$NEWRUNLIST" -a "$NEWRUNLIST" != "$RUNLIST" ]; then
-    chef-client --runlist $NEWRUNLIST && RUNLIST=$NEWRUNLIST
+    chef-client $OPTS --runlist $NEWRUNLIST && RUNLIST=$NEWRUNLIST
 fi
 
 # add role based on instance name, if it exists
 roles=$INSTANCE
 NEWRUNLIST=`expand role`
 if [ -n "$NEWRUNLIST" -a "$NEWRUNLIST" != "$RUNLIST" ]; then
-    chef-client --runlist $NEWRUNLIST && RUNLIST=$NEWRUNLIST
+    chef-client $OPTS --runlist $NEWRUNLIST && RUNLIST=$NEWRUNLIST
 fi
 
 # failsafe attempt to run common role if nothing else specified
 if [ -z "$RUNLIST" ]; then
-    chef-client --runlist 'role[common]'
+    chef-client $OPTS --runlist 'role[common]'
 fi
