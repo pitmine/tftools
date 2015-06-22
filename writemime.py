@@ -91,7 +91,7 @@ def main():
     :raises IOError: (FileNotFoundError) when specified part file not found
     :raises IOError: (PermissionError) when specified part file cannot be read
     """
-    outer = MIMEMultipart()
+    outer = MIMEMultipart(boundary='==cloud-multi' + ('==' * len(sys.argv)))
 
     parser = argparse.ArgumentParser()
 
