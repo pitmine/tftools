@@ -15,8 +15,12 @@ if [ $# != 1 ]; then
 fi
 INSTANCE=$1
 
-# Override cloud-init log file with stdout - visible from OpenStack console
-OPTS="-L -"
+# redirect standard output and error to console log and cloud-init-output log
+exec 2>&1 | tee -a /dev/console /var/log/cloud-init-output.log
+
+# send log output from chef directly to /dev/console to eliminate buffering
+# (log will not be preserved, but chef-client will run again soon enough)
+OPTS="-L /dev/console"
 
 # cloud-init does not set HOME, but it is needed for chef-server cookbook
 export HOME=/root
