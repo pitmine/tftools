@@ -99,9 +99,9 @@ case $CMD in
         if $ISREMOTE; then
             echo >&2 "Different remote state already enabled"
             echo >&2 current state "'$REMOTE'" != branch remote "'$DEPLOYMENT'"
-	    exit 1
-	fi
-	;;
+            exit 1
+        fi
+        ;;
     disable|config)
         if $ISREMOTE; then
             LOCAL=${REMOTE#*/}
