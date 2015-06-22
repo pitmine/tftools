@@ -37,17 +37,23 @@ expand() {
         {
             while read ITEM
             do
-                ITEM=$TYPE'['$ITEM']'
-                if [ -z "$ITEMS" ]; then
-                    ITEMS="$ITEM"
-                else
-                    ITEMS="$ITEMS,$ITEM"
-                fi
+                case $ITEM in
+                    *[A-Za-z]*)
+                        ITEM=$TYPE'['$ITEM']'
+                        if [ -z "$ITEMS" ]; then
+                            ITEMS="$ITEM"
+                        else
+                            ITEMS="$ITEMS,$ITEM"
+                        fi
+                        ;;
+                esac
             done
-            if [ -z "$RUNLIST" ]; then
-                echo "$ITEMS"
-            else
-                echo "$RUNLIST,$ITEMS"
+            if [ -n "$ITEMS" ]; then
+                if [ -z "$RUNLIST" ]; then
+                    echo "$ITEMS"
+                else
+                    echo "$RUNLIST,$ITEMS"
+                fi
             fi
         }
 }
