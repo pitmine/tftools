@@ -91,7 +91,7 @@ fi
 
 if $ISREMOTE && [ "${REMOTE#*/}" != "$DEPLOYMENT" ]; then
     echo "Configured to use different remote '$REMOTE' - use tfremote disable"
-    echo " (and then tfremote config '$DEPLOYMENT')"
+    echo " (or if remote for it exists: tfremote config '$DEPLOYMENT')"
     exit 1
 fi
 
