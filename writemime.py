@@ -34,7 +34,7 @@ MAPPINGS = {
 
 # Preload some common script extensions into MIME types lookup
 for ext in ('sh', 'py', 'rb'):
-    mimetypes.types_map['.' + ext] = 'text/x-shellscript'
+    mimetypes.add_type('text/x-shellscript', '.' + ext, strict=False)
 
 
 # noinspection PyRedundantParentheses
@@ -62,7 +62,8 @@ def get_type(fname, deftype):
     :return: MIME type for file
     :rtype: str
     """
-    (rtype, encoding) = mimetypes.guess_type(fname)
+    (rtype, encoding) = mimetypes.guess_type(fname, strict=False)
+    line = ''
     if rtype is None:
         rtype = deftype
     if encoding is not None:
