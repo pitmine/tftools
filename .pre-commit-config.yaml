@@ -10,6 +10,8 @@
     -   id: trailing-whitespace
         files: ^tf|-|\.(py|tfvars|tf|tfenv|env|yaml|pem|key|mock)$
     -   id: end-of-file-fixer
+        files: ^tf|-|\.(py|tfvars|tf|tfenv|env|yaml|pem|key|mock)$
+        exclude: git-crypt
     -   id: check-added-large-files
         # args: [--maxkb=500] # default reject files >= 500KB
     -   id: check-case-conflict
