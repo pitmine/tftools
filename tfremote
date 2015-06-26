@@ -39,6 +39,7 @@ esac
 ARGS=  # possible future -force or -pull=false option?
 ORG_USER=example
 DEPLOYMENT=
+REM_EXT=
 CMD=$1
 
 case $1 in
@@ -49,6 +50,11 @@ case $1 in
         ;;
     config)
         ARGC=1
+	# this will save remote state in $LOCAL/terraform.tfstate.remote
+	# when disabling it in one environment before switching to another
+	# environment, where that environment's saved remote state will be
+	# deleted after a successful remote pull.
+	REM_EXT=.remote
         ;;
     *) usage unknown argument "'$1'" ;;
 esac
@@ -108,8 +114,8 @@ case $CMD in
             mkdir -p "$LOCAL"
             eval "$(sed -e 's/^/export /' atlas.env)"
             # defaults to -pull=true
-            terraform remote config -state "${LOCAL}/terraform.tfstate" \
-                -disable && ./getremote.py
+            terraform remote config -disable \
+                -state "${LOCAL}/terraform.tfstate${REM_EXT}" && ./getremote.py
             (( 2 == $? ))
             EXIT=$?
             if [ 0 != "$EXIT" -o config != "$CMD" ]; then
@@ -142,6 +148,17 @@ mkdir -p "$LOCAL"
 setenv terraform remote config -backend-config=name="$DEPLOYMENT" \
        -state="$LOCAL/terraform.tfstate"
 
+ERR=$?
+
+if [ 0 == "$ERR" -a -n "$REM_EXT" ]; then
+    rm -f "${LOCAL}/terraform.tfstate${REM_EXT}"
+fi
+
 if [ -z "$1" ]; then
     ./getremote.py
+    if [ 0 == "$ERR" ]; then
+	ERR=$?
+    fi
 fi
+
+exit $ERR
