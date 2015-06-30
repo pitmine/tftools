@@ -32,6 +32,8 @@ MAPPINGS = {
     '#cloud-boothook': 'text/cloud-boothook'
 }
 
+MIME_DEFTYPE = 'application/octet-stream'
+
 # Preload some common script extensions into MIME types lookup
 for ext in ('sh', 'py', 'rb'):
     mimetypes.add_type('text/x-shellscript', '.' + ext, strict=False)
@@ -52,38 +54,41 @@ def try_decode(data):
         return (False, data)
 
 
-def get_type(fname, deftype):
-    """Determine MIME type of file based on first line contents.
+def get_mimetype(filename, default_mime_type):
+    """Determine MIME type of file based on first line contents or extension.
 
-    :param fname: filename to examine for MIME type
-    :type fname: str
-    :param deftype: default type for text (decodable Unicode) contents
-    :type deftype: str
+    If no specific MIME type can be guessed, and the file is decodable UTF-8
+    (or ASCII) text, the provided default mime type is used; for non-text files,
+    application/octet-stream is returned.
+
+    :param filename: filename to examine for MIME type
+    :type filename: str
+    :param default_mime_type: default type for text (decodable UTF-8) file
+    :type default_mime_type: str
     :return: MIME type for file
     :rtype: str
     """
-    (rtype, encoding) = mimetypes.guess_type(fname, strict=False)
+    (mime_type, encoding) = mimetypes.guess_type(filename, strict=False)
     line = ''
-    if rtype is None:
-        rtype = deftype
+    if mime_type is None:
+        mime_type = default_mime_type
     if encoding is not None:
         can_be_decoded = False
     else:
-        with open(fname, 'rb') as partfile:
-            (can_be_decoded, line) = try_decode(partfile.readline())
+        with open(filename, 'rb') as part_file:
+            (can_be_decoded, line) = try_decode(part_file.readline())
 
     if can_be_decoded:
-        # slist is sorted longest first
-        slist = sorted(list(MAPPINGS.keys()),
-                       key=lambda e: 0 - len(e))
-        for sstr in slist:
-            if line.startswith(sstr):
-                rtype = MAPPINGS[sstr]
+        # sorted_list is sorted longest first
+        sorted_list = sorted(list(MAPPINGS.keys()), key=lambda e: 0 - len(e))
+        for start_str in sorted_list:
+            if line.startswith(start_str):
+                mime_type = MAPPINGS[start_str]
                 break
-    elif rtype is None or rtype.startswith('text/'):
-        rtype = 'application/octet-stream'
+    elif mime_type is None or mime_type.startswith('text/'):
+        mime_type = MIME_DEFTYPE
 
-    return rtype
+    return mime_type
 
 
 def main():
@@ -103,22 +108,22 @@ def main():
                         help='compress output', action='store_true')
     parser.add_argument('-d', '--default', dest='deftype', default='text/plain',
                         help="default text MIME type [default '%(default)s']")
-    parser.add_argument('--delim', dest='delim', default=':',
+    parser.add_argument('--delim', dest='delimiter', default=':',
                         help="MIME suffix delimiter [default '%(default)s']")
 
     parser.add_argument('parts', nargs='+',
                         help='part filename and optional MIME type',
-                        metavar='PARTFILE[:MIME/TYPE]')
+                        metavar='PART_FILE[:MIME/TYPE]')
 
     args = parser.parse_args()
 
     for arg in args.parts:
-        argtype = arg.split(args.delim, 1)
+        argtype = arg.split(args.delimiter, 1)
         path = argtype[0]
         if len(argtype) > 1:
             mtype = argtype[1]
         else:
-            mtype = get_type(path, args.deftype)
+            mtype = get_mimetype(path, args.deftype)
 
         maintype, subtype = mtype.split('/', 1)
         if maintype == 'text':
@@ -142,20 +147,20 @@ def main():
     if args.output is '-':
         if hasattr(sys.stdout, 'buffer'):
             # We want to write bytes not strings
-            ofile = sys.stdout.buffer  # pylint: disable=E1101
+            output_file = sys.stdout.buffer  # pylint: disable=E1101
         else:
-            ofile = sys.stdout
+            output_file = sys.stdout
     else:
-        ofile = open(args.output, 'wb')
+        output_file = open(args.output, 'wb')
 
     if args.compress:
-        gfile = gzip.GzipFile(fileobj=ofile, filename=args.output)
-        gfile.write(outer.as_string().encode())
-        gfile.close()
+        gzip_file = gzip.GzipFile(fileobj=output_file, filename=args.output)
+        gzip_file.write(outer.as_string().encode())
+        gzip_file.close()
     else:
-        ofile.write(outer.as_string().encode())
+        output_file.write(outer.as_string().encode())
 
-    ofile.close()
+    output_file.close()
 
 if __name__ == '__main__':
     try:
