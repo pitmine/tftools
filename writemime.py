@@ -91,6 +91,76 @@ def get_mimetype(filename, default_mime_type):
     return mime_type
 
 
+def part_get_mimetype(part_name, default_mime_type, delimiter=':'):
+    """Get the MIME type for a part name argument.
+
+    Takes a part name, which is a file path with an optional MIME type suffix
+    that is split from the name if present. If no suffix is given, uses the file
+    contents and filename extension to guess the MIME type.
+
+    If no specific MIME type can be guessed, and the file is decodable UTF-8
+    (or ASCII) text, the provided default mime type is used; for non-text files,
+    application/octet-stream is returned.
+
+    :param part_name: part string with file path and optional MIME type suffix
+    :type part_name: str
+    :param default_mime_type: default MIME type for text (decodable UTF-8) file
+    :type default_mime_type: str
+    :param delimiter: delimiter separating suffix from path (default=':')
+    :type delimiter: str
+    :return: file path of part content, MIME type
+    :rtype: tuple(str, str)
+    """
+    argtype = part_name.split(delimiter, 1)
+    path = argtype[0]
+    if len(argtype) > 1:
+        mime_type = argtype[1]
+    else:
+        mime_type = get_mimetype(path, default_mime_type)
+    # noinspection PyRedundantParentheses
+    return (path, mime_type)
+
+
+def add_part(body, path, mime_type=MIME_DEFTYPE, encode=None):
+    """Add a message part to a multipart message body.
+
+    Adds the file given by path to body (using Content-Disposition: attachment)
+    with filename= the last component (basename) of the path.
+    An optional MIME type and an encoding function (from email.encoders) can be
+    provided; if no MIME type is given, it defaults to application/octet-stream.
+    The encoding is forced to Base64 for non text/* MIME types (e.g. default).
+
+    :param body: multipart message body to attach the part to
+    :type body: MIMEMultipart
+    :param path: pathname of part contents
+    :type path: str
+    :param mime_type: optional MIME type
+    :type mime_type: str
+    :param encode: optional encoder function
+    :type encode: function(MIMEBase)
+    """
+    (maintype, subtype) = mime_type.split('/', 1)
+    if maintype == 'text':
+        with open(path) as part_file:
+            # Note: we should handle calculating the charset
+            msg = MIMEText(part_file.read(), _subtype=subtype)
+    else:
+        with open(path, 'rb') as part_file:
+            msg = MIMEBase(maintype, subtype)
+            msg.set_payload(part_file.read())
+        # Encode the payload using Base64
+        encode = encoders.encode_base64
+
+    if encode is not None:
+        encode(msg)
+
+    # Set the filename parameter
+    # noinspection PyUnresolvedReferences
+    msg.add_header('Content-Disposition', 'attachment',
+                   filename=os.path.basename(path))
+    body.attach(msg)
+
+
 def main():
     """Generate MIME multi-part user-data file from specified parts.
 
@@ -99,50 +169,53 @@ def main():
     """
     outer = MIMEMultipart(boundary='==cloud-multi' + ('==' * len(sys.argv)))
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        epilog='parts are added as follows: positional arguments, '
+        'then -e/--encode arguments, and finally -a/--add arguments '
+        '(positional and -a/--add only differ in order)',
+        add_help=False
+    )
 
+    parser.add_argument('-e', '--encode', dest='encoded_parts', action='append',
+                        help='(Base64 encoded) part filename and optional '
+                        'MIME type', metavar='PART_FILE[:MIME/TYPE]',
+                        default=[])
+    parser.add_argument('-a', '--add', dest='added_parts', action='append',
+                        help='(default-encoded) part filename and optional '
+                        'MIME type', metavar='PART_FILE[:MIME/TYPE]',
+                        default=[])
     parser.add_argument('-o', '--output', dest='output', default='-',
-                        help='write output to FILE [default standard output]',
+                        help='write output to FILE (default: standard output)',
                         metavar='FILE')
     parser.add_argument('-z', '--gzip', dest='compress', default=False,
-                        help='compress output', action='store_true')
+                        help='compress output (default: %(default)s)',
+                        action='store_true')
     parser.add_argument('-d', '--default', dest='deftype', default='text/plain',
-                        help="default text MIME type [default '%(default)s']")
-    parser.add_argument('--delim', dest='delimiter', default=':',
-                        help="MIME suffix delimiter [default '%(default)s']")
+                        help="MIME for unknown text (default: '%(default)s')")
+    parser.add_argument('--delimiter', dest='delimiter', default=':',
+                        help="MIME suffix delimiter (default: '%(default)s')")
+    parser.add_argument('-h', '--help', action='help',
+                        help='show this help message and exit')
 
-    parser.add_argument('parts', nargs='+',
-                        help='part filename and optional MIME type',
+    parser.add_argument('parts', nargs='*',
+                        help='part filename and optional MIME type/subtype',
                         metavar='PART_FILE[:MIME/TYPE]')
 
     args = parser.parse_args()
 
-    for arg in args.parts:
-        argtype = arg.split(args.delimiter, 1)
-        path = argtype[0]
-        if len(argtype) > 1:
-            mtype = argtype[1]
-        else:
-            mtype = get_mimetype(path, args.deftype)
+    # There is no easy way to preserve command-line ordering; we just output
+    # positional args, then encoded args, and finally added (unencoded) args.
+    no_parts = True
+    for arg_list, encoder in [(args.parts, None),
+                              (args.encoded_parts, encoders.encode_base64),
+                              (args.added_parts, None)]:
+        for arg in arg_list:
+            (path, mime) = part_get_mimetype(arg, args.deftype, args.delimiter)
+            add_part(outer, path, mime, encoder)
+            no_parts = False
 
-        maintype, subtype = mtype.split('/', 1)
-        if maintype == 'text':
-            with open(path) as partfile:
-                # Note: we should handle calculating the charset
-                msg = MIMEText(partfile.read(), _subtype=subtype)
-        else:
-            with open(path, 'rb') as partfile:
-                msg = MIMEBase(maintype, subtype)
-                msg.set_payload(partfile.read())
-            # Encode the payload using Base64
-            encoders.encode_base64(msg)
-
-        # Set the filename parameter
-        # noinspection PyUnresolvedReferences
-        msg.add_header('Content-Disposition', 'attachment',
-                       filename=os.path.basename(path))
-
-        outer.attach(msg)
+    if no_parts:
+        parser.error('No parts specified (at least one PART_FILE required)')
 
     if args.output is '-':
         if hasattr(sys.stdout, 'buffer'):
