@@ -16,6 +16,11 @@ for them to have the pre-commit git hook.
 The virtualenv does not need to be activated once the hook is installed,
 but it must remain accessible at the same path.
 
+Running `./installprecommit.py` also installs a userdata Git textconv filter
+to decode the Base64 used to protect shell scripts from Terraform templating;
+that records the current directory path in the Git configuration,
+so you should re-run `./installprecommit.py` if you move this directory,
+
 If you *really* need to make a commit, and the pre-commit hooks are failing,
 you can disable all hooks with `git commit --no-verify`,
 but it is better to use the SKIP environment variable to just disable

@@ -9,8 +9,9 @@
 *.env   filter=git-crypt diff=git-crypt
 *.tfenv filter=git-crypt diff=git-crypt
 
-# Cloud config files contain validator (for now), must be encrypted
-cloud-config-*.yaml filter=git-crypt diff=git-crypt
+# Userdata files should be base64-decoded for (useful) diffs
+*.userdata     diff=userdata
+*.userdata.20* diff=userdata
 
 # State files should not be committed, but if they are, they must be encrypted
 *.tfstate        filter=git-crypt diff=git-crypt
